@@ -25,6 +25,7 @@ public class Program
 			- add chapter
 			- add beat to thread
 		- consider updating render only when things are added
+			- may not need to bother with async at all
 		- scrolling for rendering?
 	*/
 	private static async Task Main(string[] args)

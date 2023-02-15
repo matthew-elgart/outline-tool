@@ -39,6 +39,7 @@ public class TextRenderer
 		string? text = null,
 		int indentation = 0,
 		ConsoleColor? color = null,
+		bool highlighted = false,
 		bool hasWrapped = false)
 	{
 		var textLength = text?.Length ?? 0;
@@ -51,7 +52,7 @@ public class TextRenderer
 		// if we don't need to wrap, just proceed
 		if (textLength + indentationWithWrap <= this._width)
 		{
-			this.AddToBuffer(text, indentationWithWrap, color);
+			this.AddToBuffer(text, indentationWithWrap, color, highlighted);
 			return;
 		}
 
@@ -67,7 +68,8 @@ public class TextRenderer
 		this.AddToBuffer(
 			text.Substring(0, lengthToPrintOnCurrentLine),
 			indentationWithWrap,
-			color
+			color,
+			highlighted
 		);
 
 		// now recursively print the carryover string. If we broke on whitespace,
@@ -83,15 +85,17 @@ public class TextRenderer
 			),
 			indentation,
 			color,
+			highlighted,
 			hasWrapped: true
 		);
 		return;
 	}
 
 	private void AddToBuffer(
-		string? text = null,
-		int indentation = 0,
-		ConsoleColor? color = null)
+		string? text,
+		int indentation,
+		ConsoleColor? color,
+		bool highlighted)
 	{
 		var textLength = text?.Length ?? 0;
 
@@ -113,7 +117,7 @@ public class TextRenderer
 			}
 		}
 
-		this.Lines.Add(new(lineText, color ?? ConsoleColor.Gray));
+		this.Lines.Add(new(lineText, color ?? ConsoleColor.Gray, highlighted));
 	}
 
 	/// <summary>
@@ -139,7 +143,7 @@ public class TextRenderer
 				blankLine[j] = ' ';
 			}
 
-			this.Lines.Add(new(blankLine));
+			this.Lines.Add(new(blankLine, ConsoleColor.Gray));
 		}
 
 		// sanity check: can remove if I see this later
@@ -152,8 +156,13 @@ public class TextRenderer
 		Console.SetCursorPosition(0,0);
 		foreach (var line in this.Lines)
 		{
-			Console.ForegroundColor = line.Color;
+			if (line.Highlighted) { Console.BackgroundColor = line.Color; }
+			Console.ForegroundColor = line.Highlighted
+				? ConsoleColor.Black
+				: line.Color;
 			Console.Write(line.Text);
+
+			Console.ResetColor();
 		}
 
 		// thought it made sense to do this here, but put the responsibility
@@ -164,5 +173,6 @@ public class TextRenderer
 
 	private record ColoredString(
 		char[] Text,
-		ConsoleColor Color = ConsoleColor.Gray);
+		ConsoleColor Color,
+		bool Highlighted = false);
 }

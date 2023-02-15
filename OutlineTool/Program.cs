@@ -34,8 +34,11 @@ public class Program
 
 		var tickRate = TimeSpan.FromMilliseconds(100);
 		var story = StoryInfoProvider.Get();
-		var whatToRender = 0;
+		var frontEnd = new FrontEnd(story);
+		//var whatToRender = 0;
 		var exit = false;
+
+		var handlingInput = false;
 
 		using var cts = new CancellationTokenSource();
 		async Task MonitorKeyPresses()
@@ -44,6 +47,7 @@ public class Program
 			{
 				if (Console.KeyAvailable)
 				{
+					handlingInput = true;
 					var key = Console.ReadKey(intercept: true).Key;
 
 					if (key == ConsoleKey.Escape)
@@ -52,16 +56,10 @@ public class Program
 						return;
 					}
 					
-					whatToRender = key switch
-					{
-						ConsoleKey.D1 => 0,
-						ConsoleKey.D2 => 1,
-						ConsoleKey.D3 => 2,
-						ConsoleKey.S => 3,
-						ConsoleKey.L => 4,
-						_ => -1
-					};
+					frontEnd.HandleInput(key);
 				}
+
+				handlingInput = false;
 
 				await Task.Delay(10);
 			}
@@ -72,35 +70,17 @@ public class Program
 		var renderer = new TextRenderer(
 			Console.WindowWidth,
 			// a -1 may be necessary, since terminal seems to autoscroll when fully writing out the final line, which isn't what we want
-			// changed to =4 to account for the 3 extra lines of the bash prompt (more important for development so we don't scroll the screen as we iterate)
+			// changed to -4 to account for the 3 extra lines of the bash prompt (more important for development so we don't scroll the screen as we iterate)
 			Console.WindowHeight - 4);
 
 		do
 		{
-			renderer.Reset(Console.WindowWidth, Console.WindowHeight - 4);
-
-			switch (whatToRender)
+			if (!handlingInput)
 			{
-				case 0:
-					RenderStoryThread(story.Threads[0], renderer);
-					break;
-				case 1:
-					RenderStoryThread(story.Threads[1], renderer);
-					break;
-				case 2:
-					RenderStory(story, renderer);
-					break;
-				case 3:
-					SaveStory(story);
-					whatToRender = -1;
-					break;
-				case 4:
-					story = LoadStory();
-					whatToRender = -1;
-					break;
-			}
+				renderer.Reset(Console.WindowWidth, Console.WindowHeight - 4);
 
-			renderer.RenderFrame();
+				frontEnd.Render(story, renderer);
+			}
 
 			await Task.Delay(tickRate);
 		} while (!exit);

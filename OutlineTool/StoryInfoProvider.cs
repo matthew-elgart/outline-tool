@@ -30,14 +30,14 @@ public static class StoryInfoProvider
 			TextColor = ConsoleColor.DarkGreen,
 		};
 
-		var beat11 = new StoryBeat { Name = "Eddie learns about the Bobby Flay competition. And then does some other stuff, and then eats pancakes! And the pancakes are delicious, but you already know that. I don't think anyone needs to be convinced about how staggeringly incredible pancakes are.", Chapter = chapter1, Order = 0 };
-		var beat12 = new StoryBeat { Name = "Eddie cooks a bunch of things in a montage", Chapter = chapter2, Order = 1 };
-		var beat13 = new StoryBeat { Name = "Eddie wins the tournament", Chapter = chapter4, Order = 2 };
+		var beat11 = new StoryBeat { Name = "Eddie learns about the Bobby Flay competition. And then does some other stuff, and then eats pancakes! And the pancakes are delicious, but you already know that. I don't think anyone needs to be convinced about how staggeringly incredible pancakes are.", Chapter = chapter1, Order = 0, StoryThread = thread1 };
+		var beat12 = new StoryBeat { Name = "Eddie cooks a bunch of things in a montage", Chapter = chapter2, Order = 1, StoryThread = thread1 };
+		var beat13 = new StoryBeat { Name = "Eddie wins the tournament", Chapter = chapter4, Order = 2, StoryThread = thread1 };
 		thread1.StoryBeats = new() { beat11, beat12, beat13 };
 
-		var beat21 = new StoryBeat { Name = "Eddie's dad disapproves of the Bobby Flay competition", Chapter = chapter1, Order = 0 };
-		var beat22 = new StoryBeat { Name = "Eddie leaves the baseball game to go to the cooking competition", Chapter = chapter3, Order = 1 };
-		var beat23 = new StoryBeat { Name = "Eddie's dad helps him crack eggs at the competition", Chapter = chapter4, Order = 2 };
+		var beat21 = new StoryBeat { Name = "Eddie's dad disapproves of the Bobby Flay competition", Chapter = chapter1, Order = 0, StoryThread = thread2 };
+		var beat22 = new StoryBeat { Name = "Eddie leaves the baseball game to go to the cooking competition", Chapter = chapter3, Order = 1, StoryThread = thread2 };
+		var beat23 = new StoryBeat { Name = "Eddie's dad helps him crack eggs at the competition", Chapter = chapter4, Order = 2, StoryThread = thread2 };
 		thread2.StoryBeats = new() { beat21, beat22, beat23 };
 
 		chapter1.StoryBeats = new HashSet<StoryBeat>

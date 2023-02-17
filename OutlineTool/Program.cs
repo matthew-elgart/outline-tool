@@ -22,8 +22,24 @@ public class Program
 			- factor to its own service to share options
 			- let user input name? maybe not yet
 		- user actions (while handling navigation props)
-			- add chapter
-			- add beat to thread
+			- threads
+				* add beat to thread
+				* "drag" beat within thread
+				- add a new thread
+				- switch between threads to view
+			- chapters
+				- add chapter
+				- "drag" chapter around
+				- filter threads to display beats for? (stretch/not sure if worth)
+			- assign beat to chapter
+			- to start, consider not enforcing consistent order between threads/chapters
+				- if it's valuable, could offer a warning when dragging beats in a thread, and then unassigning from chapter
+				- and when moving between chapters, could offer a warning and then auto update thread order
+		- display errors better
+		- make all those user actions look nice
+			- decide on how to highlight and stuff
+			- nano-esque "user input area" at the bottom?
+				- maybe easy to build on thread/chapter situation
 		- consider updating render only when things are added
 			- may not need to bother with async at all
 		- scrolling for rendering?
@@ -36,7 +52,6 @@ public class Program
 		var tickRate = TimeSpan.FromMilliseconds(100);
 		var story = StoryInfoProvider.Get();
 		var frontEnd = new FrontEnd(story);
-		//var whatToRender = 0;
 		var exit = false;
 
 		var handlingInput = false;
@@ -49,15 +64,15 @@ public class Program
 				if (Console.KeyAvailable)
 				{
 					handlingInput = true;
-					var key = Console.ReadKey(intercept: true).Key;
+					var input = Console.ReadKey(intercept: true);
 
-					if (key == ConsoleKey.Escape)
+					if (input.Key == ConsoleKey.Escape)
 					{ 
 						exit = true;
 						return;
 					}
 					
-					frontEnd.HandleInput(key);
+					frontEnd.HandleInput(input);
 				}
 
 				handlingInput = false;

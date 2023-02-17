@@ -33,9 +33,9 @@ public class FrontEnd
 		renderer.RenderFrame();
 	}
 
-	public void HandleInput(ConsoleKey input)
+	public void HandleInput(ConsoleKeyInfo input)
 	{
-		switch (input)
+		switch (input.Key)
 		{
 			case ConsoleKey.D1:
 				this._currentStoryThread = this._story.Threads[0];
@@ -51,7 +51,9 @@ public class FrontEnd
 				this._currentStoryThread = null;
 				this._displayStory = true;
 				break;
+
 			case ConsoleKey.DownArrow:
+			case ConsoleKey.J:
 				if (this._currentStoryThread == null) { return; }
 				if (this._selectedStoryBeatIndex == null)
 				{
@@ -64,6 +66,7 @@ public class FrontEnd
 				this._selectedStoryBeatIndex = newDownIndex;
 				break;
 			case ConsoleKey.UpArrow:
+			case ConsoleKey.K:
 				if (this._currentStoryThread == null) { return; }
 				if (this._selectedStoryBeatIndex == null)
 				{
@@ -75,19 +78,55 @@ public class FrontEnd
 					0);
 				this._selectedStoryBeatIndex = newUpIndex;
 				break;
+
 			case ConsoleKey.N:
+				if (this._currentStoryThread == null) { return; }
 				if (this._selectingNewStoryBeat) { return; }
-				this._selectedStoryBeatIndex = null;
+
 			 	Console.SetCursorPosition(0, 20);
 				Console.Write("New story beat name?");
 				Console.SetCursorPosition(0, 21);
-				var x = Console.ReadLine();
-				this._currentStoryThread!.StoryBeats.Add(new()
+				var name = Console.ReadLine();
+				if (name == string.Empty) { return; }
+
+				int index;
+				if (this._selectedStoryBeatIndex == null)
 				{
-					Name = x!,
-					Order = this._currentStoryThread.StoryBeats.Count
-				});
+					index = input.Modifiers == ConsoleModifiers.Shift
+						? 0
+						: this._currentStoryThread.StoryBeats.Count;
+				}
+				else
+				{
+					index = input.Modifiers == ConsoleModifiers.Shift
+						? this._selectedStoryBeatIndex.Value
+						: this._selectedStoryBeatIndex.Value + 1;
+				}
+
+				StoryUpdateService.AddStoryBeat(
+					index,
+					name!,
+					this._currentStoryThread
+				);
 				break;
+			case ConsoleKey.E:
+				if (this._currentStoryThread == null) { return; }
+				if (this._selectingNewStoryBeat) { return; }
+				if (this._selectedStoryBeatIndex == null) { return; }
+
+			 	Console.SetCursorPosition(0, 20);
+				Console.Write("New story beat name?");
+				Console.SetCursorPosition(0, 21);
+				var newName = Console.ReadLine();
+				if (newName == string.Empty) { return; }
+
+				StoryUpdateService.RenameStoryBeat(
+					this._selectedStoryBeatIndex.Value,
+					newName!,
+					this._currentStoryThread
+				);
+				break;
+
 			case ConsoleKey.Enter:
 				if (this._currentStoryThread == null
 					|| this._selectedStoryBeatIndex == null)
@@ -96,22 +135,10 @@ public class FrontEnd
 				}
 				if (this._selectingNewStoryBeat)
 				{
-					this._currentStoryThread
-						.StoryBeats
-						.Remove(this._storyBeatToMove!);
-
-					this._currentStoryThread
-						.StoryBeats.
-						Insert(
-							this._selectedStoryBeatIndex.Value,
-							this._storyBeatToMove!);
-					
-					for (var i = this._selectedStoryBeatIndex.Value;
-						i < this._currentStoryThread.StoryBeats.Count;
-						i++)
-					{
-						this._currentStoryThread.StoryBeats[i].Order = i;
-					}
+					StoryUpdateService.UpdateStoryBeatOrder(
+						this._storyBeatToMove!,
+						this._selectedStoryBeatIndex.Value
+					);
 
 					this._storyBeatToMove = null;
 					this._selectedStoryBeatIndex = null;

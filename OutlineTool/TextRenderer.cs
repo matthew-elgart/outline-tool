@@ -1,17 +1,21 @@
 public class TextRenderer
 {
-	private const int whitespaceOnTop = 2;
+	// coordinates of the top left cell
+	private int _xPosition;
+	private int _yPosition;
 
 	private int _width;
 	private int _height;
+
 	private List<ColoredString> Lines;
 
-	public TextRenderer(int width, int height)
+	public TextRenderer(int xPosition, int yPosition, int width, int height)
 	{
+		this._xPosition = xPosition;
+		this._yPosition = yPosition;
 		this._width = width;
 		this._height = height;
 		this.Lines = new();
-		this.Reset();
 	}
 
 	/// <summary>
@@ -24,10 +28,6 @@ public class TextRenderer
 		this._height = height ?? this._height;
 
 		this.Lines.Clear();
-		foreach (var i in Enumerable.Range(0, whitespaceOnTop))
-		{
-			this.Print();
-		}
 	}
 
 	/// <summary>
@@ -153,9 +153,11 @@ public class TextRenderer
 		}
 
 		// print!
-		Console.SetCursorPosition(0,0);
+		var currentY = this._yPosition;
 		foreach (var line in this.Lines)
 		{
+			Console.SetCursorPosition(this._xPosition, currentY);
+
 			if (line.Highlighted) { Console.BackgroundColor = line.Color; }
 			Console.ForegroundColor = line.Highlighted
 				? ConsoleColor.Black
@@ -163,6 +165,7 @@ public class TextRenderer
 			Console.Write(line.Text);
 
 			Console.ResetColor();
+			currentY++;
 		}
 
 		// thought it made sense to do this here, but put the responsibility

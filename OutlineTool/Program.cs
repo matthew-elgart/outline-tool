@@ -84,6 +84,8 @@ public class Program
 		var monitorKeyPresses = MonitorKeyPresses();
 
 		var renderer = new TextRenderer(
+			0,
+			2,
 			Console.WindowWidth,
 			// a -1 may be necessary, since terminal seems to autoscroll when fully writing out the final line, which isn't what we want
 			// changed to -4 to account for the 3 extra lines of the bash prompt (more important for development so we don't scroll the screen as we iterate)

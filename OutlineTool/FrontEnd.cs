@@ -3,6 +3,11 @@ using System.Text.Json.Serialization;
 
 public class FrontEnd
 {
+	// a -1 may be necessary, since terminal seems to autoscroll when fully writing out the final line, which isn't what we want
+	// changed to -4 to account for the 3 extra lines of the bash prompt (more important for development so we don't scroll the screen as we iterate)
+	// changed to -6 to allow two lines of whitespace at the top, just for style
+	private const int Padding = 6;
+
 	private Story _story;
 	private StoryThread? _currentStoryThread;
 	private bool _displayStory;
@@ -10,27 +15,32 @@ public class FrontEnd
 	private bool _selectingNewStoryBeat;
 	private StoryBeat? _storyBeatToMove;
 
+	private TextRenderer _threadRenderer = new();
+	private TextRenderer _storyRenderer = new();
+
 	public FrontEnd(Story story)
 	{
 		this._story = story;
 	}
 
-	public void Render(
-		Story story,
-		TextRenderer renderer
-	)
+	public void Render(Story story)
 	{
+		var (threadRenderer, storyRenderer) = this.GetConfiguredRenderers();
+
 		if (this._displayStory)
 		{
-			RenderStory(this._story, renderer);
+			RenderStory(this._story, this._storyRenderer);
 		}
 
 		if (this._currentStoryThread != null)
 		{
-			this.RenderStoryThread(this._currentStoryThread, renderer);
+			this.RenderStoryThread(
+				this._currentStoryThread,
+				this._threadRenderer);
 		}
 
-		renderer.RenderFrame();
+		threadRenderer?.RenderFrame();
+		storyRenderer?.RenderFrame();
 	}
 
 	public void HandleInput(ConsoleKeyInfo input)
@@ -39,17 +49,14 @@ public class FrontEnd
 		{
 			case ConsoleKey.D1:
 				this._currentStoryThread = this._story.Threads[0];
-				this._displayStory = false;
 				this._selectedStoryBeatIndex = null;
 				break;
 			case ConsoleKey.D2:
 				this._currentStoryThread = this._story.Threads[1];
-				this._displayStory = false;
 				this._selectedStoryBeatIndex = null;
 				break;
 			case ConsoleKey.D3:
-				this._currentStoryThread = null;
-				this._displayStory = true;
+				this._displayStory = !this._displayStory;
 				break;
 
 			case ConsoleKey.DownArrow:
@@ -196,5 +203,72 @@ public class FrontEnd
 					color: thread.TextColor);
 			}
 		}
+	}
+
+	private (TextRenderer?, TextRenderer?) GetConfiguredRenderers()
+	{
+		if (this._currentStoryThread == null && !this._displayStory)
+		{
+			return (this._threadRenderer, null);
+		}
+
+		var threadRenderer = this._threadRenderer;
+		var storyRenderer = this._storyRenderer;
+		//TextRenderer? threadRenderer = null;
+		//TextRenderer? storyRenderer = null;
+
+		if (this._currentStoryThread != null && this._displayStory)
+		{
+			var renderWidth = Console.WindowWidth / 2;
+			threadRenderer = this._threadRenderer;
+			storyRenderer = this._storyRenderer;
+
+			threadRenderer.Reset(
+				xPosition: 0,
+				yPosition: 2,
+				width: renderWidth,
+				height: Console.WindowHeight - 6);
+			storyRenderer.Reset(
+				xPosition: renderWidth,
+				yPosition: 2,
+				width: renderWidth,
+				height: Console.WindowHeight - 6);
+
+			return (threadRenderer, storyRenderer);
+		}
+
+		if (this._currentStoryThread != null)
+		{
+			threadRenderer.Reset(
+				xPosition: 0,
+				yPosition: 2,
+				width: Console.WindowWidth,
+				height: Console.WindowHeight - 6);
+			storyRenderer = null;
+		}
+		else
+		{
+			storyRenderer.Reset(
+				xPosition: 0,
+				yPosition: 2,
+				width: Console.WindowWidth,
+				height: Console.WindowHeight - 6);
+			threadRenderer = null;
+		}
+
+		//var rendererToDisplay = this._currentStoryThread != null
+			//? threadRenderer
+			//: storyRenderer;
+		//rendererToDisplay.Reset(
+			//xPosition: 0,
+			//yPosition: 2,
+			//width: Console.WindowWidth,
+			//height: Console.WindowHeight - 6);
+
+		//var rendererToHide = this._currentStoryThread != null
+			//? storyRenderer
+			//: threadRenderer;
+
+		return (threadRenderer, storyRenderer);
 	}
 }

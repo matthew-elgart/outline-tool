@@ -9,21 +9,31 @@ public class TextRenderer
 
 	private List<ColoredString> Lines;
 
+	public TextRenderer() : this(0, 0, 0, 0) { }
+
+	// todo: consider removing
 	public TextRenderer(int xPosition, int yPosition, int width, int height)
 	{
 		this._xPosition = xPosition;
 		this._yPosition = yPosition;
 		this._width = width;
 		this._height = height;
+
 		this.Lines = new();
 	}
 
 	/// <summary>
 	/// Clears the renderer's text buffer, and optionally update its
-	/// dimensions.
+	/// position/dimensions.
 	/// </summary>
-	public void Reset(int? width = null, int? height = null)
+	public void Reset(
+		int? xPosition,
+		int? yPosition,
+		int? width = null,
+		int? height = null)
 	{
+		this._xPosition = xPosition ?? this._xPosition;
+		this._yPosition = yPosition ?? this._yPosition;
 		this._width = width ?? this._width;
 		this._height = height ?? this._height;
 

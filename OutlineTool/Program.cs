@@ -35,6 +35,7 @@ public class Program
 			- to start, consider not enforcing consistent order between threads/chapters
 				- if it's valuable, could offer a warning when dragging beats in a thread, and then unassigning from chapter
 				- and when moving between chapters, could offer a warning and then auto update thread order
+			- toggle colors
 		- display errors better
 		- make all those user actions look nice
 			- decide on how to highlight and stuff
@@ -83,21 +84,11 @@ public class Program
 
 		var monitorKeyPresses = MonitorKeyPresses();
 
-		var renderer = new TextRenderer(
-			0,
-			2,
-			Console.WindowWidth,
-			// a -1 may be necessary, since terminal seems to autoscroll when fully writing out the final line, which isn't what we want
-			// changed to -4 to account for the 3 extra lines of the bash prompt (more important for development so we don't scroll the screen as we iterate)
-			Console.WindowHeight - 4);
-
 		do
 		{
 			if (!handlingInput)
 			{
-				renderer.Reset(Console.WindowWidth, Console.WindowHeight - 4);
-
-				frontEnd.Render(story, renderer);
+				frontEnd.Render(story);
 			}
 
 			await Task.Delay(tickRate);

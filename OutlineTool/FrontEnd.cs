@@ -10,9 +10,23 @@ public class FrontEnd
 
 	private Story _story;
 	private StoryThread? _currentStoryThread;
+	private bool _displayThread => this._currentStoryThread != null;
 	private bool _displayStory;
-	private int? _selectedStoryBeatIndex;
-	private bool _selectingNewStoryBeat;
+	private bool _oneColumnVisible =>
+		this._displayThread ^ this._displayStory;
+	private ColumnType? _currentlySelectedColumnType =>
+		this._selectedIndex == null ? null
+			: this._oneColumnVisible ? this._displayThread
+				? ColumnType.Thread
+				: ColumnType.Story
+			: this._selectFromRightColumn
+				? ColumnType.Story
+				: ColumnType.Thread;
+
+
+	private int? _selectedIndex;
+	private bool _selectFromRightColumn;
+	private bool _selectingNewStoryBeat => this._storyBeatToMove != null;
 	private StoryBeat? _storyBeatToMove;
 
 	private TextRenderer _threadRenderer = new();
@@ -32,10 +46,10 @@ public class FrontEnd
 			RenderStory(this._story, this._storyRenderer);
 		}
 
-		if (this._currentStoryThread != null)
+		if (this._displayThread)
 		{
 			this.RenderStoryThread(
-				this._currentStoryThread,
+				this._currentStoryThread!,
 				this._threadRenderer);
 		}
 
@@ -48,7 +62,7 @@ public class FrontEnd
 		switch (input.Key)
 		{
 			case ConsoleKey.D1:
-				this._selectedStoryBeatIndex = null;
+				this._selectedIndex = null;
 				if (this._currentStoryThread == this._story.Threads[0])
 				{
 					this._currentStoryThread = null;
@@ -58,7 +72,7 @@ public class FrontEnd
 				this._currentStoryThread = this._story.Threads[0];
 				break;
 			case ConsoleKey.D2:
-				this._selectedStoryBeatIndex = null;
+				this._selectedIndex = null;
 				if (this._currentStoryThread == this._story.Threads[1])
 				{
 					this._currentStoryThread = null;
@@ -68,34 +82,61 @@ public class FrontEnd
 				this._currentStoryThread = this._story.Threads[1];
 				break;
 			case ConsoleKey.D3:
+			 	this._selectedIndex = null;
+				this._selectFromRightColumn = false;
 				this._displayStory = !this._displayStory;
 				break;
 
 			case ConsoleKey.DownArrow:
 			case ConsoleKey.J:
-				if (this._currentStoryThread == null) { return; }
-				if (this._selectedStoryBeatIndex == null)
+				var currentColumn = this._currentlySelectedColumnType;
+				if (currentColumn == null)
 				{
-					this._selectedStoryBeatIndex = 0;
+					this._selectedIndex = 0;
 					return;
 				}
+
+				var numItems = currentColumn == ColumnType.Thread
+					? this._currentStoryThread!.StoryBeats.Count
+					: this._story.Chapters.Count;
 				var newDownIndex = Math.Min(
-					this._selectedStoryBeatIndex.Value + 1,
-					this._currentStoryThread.StoryBeats.Count - 1);
-				this._selectedStoryBeatIndex = newDownIndex;
+					this._selectedIndex!.Value + 1,
+					numItems - 1);
+				this._selectedIndex = newDownIndex;
 				break;
 			case ConsoleKey.UpArrow:
 			case ConsoleKey.K:
-				if (this._currentStoryThread == null) { return; }
-				if (this._selectedStoryBeatIndex == null)
+				if (this._selectedIndex == null)
 				{
-					this._selectedStoryBeatIndex = 0;
+					this._selectedIndex = 0;
 					return;
 				}
 				var newUpIndex = Math.Max(
-					this._selectedStoryBeatIndex.Value - 1,
+					this._selectedIndex.Value - 1,
 					0);
-				this._selectedStoryBeatIndex = newUpIndex;
+				this._selectedIndex = newUpIndex;
+				break;
+			case ConsoleKey.RightArrow:
+			case ConsoleKey.L:
+				if (this._selectedIndex == null) { return; }
+				if (this._displayThread
+					&& this._displayStory
+					&& !this._selectFromRightColumn)
+				{
+					this._selectFromRightColumn = true;
+					this._selectedIndex = 0;
+				}
+				break;
+			case ConsoleKey.LeftArrow:
+			case ConsoleKey.H:
+				if (this._selectedIndex == null) { return; }
+				if (this._displayThread
+					&& this._displayStory
+					&& this._selectFromRightColumn)
+				{
+					this._selectFromRightColumn = false;
+					this._selectedIndex = 0;
+				}
 				break;
 
 			case ConsoleKey.N:
@@ -109,7 +150,7 @@ public class FrontEnd
 				if (name == string.Empty) { return; }
 
 				int index;
-				if (this._selectedStoryBeatIndex == null)
+				if (this._selectedIndex == null)
 				{
 					index = input.Modifiers == ConsoleModifiers.Shift
 						? 0
@@ -118,8 +159,8 @@ public class FrontEnd
 				else
 				{
 					index = input.Modifiers == ConsoleModifiers.Shift
-						? this._selectedStoryBeatIndex.Value
-						: this._selectedStoryBeatIndex.Value + 1;
+						? this._selectedIndex.Value
+						: this._selectedIndex.Value + 1;
 				}
 
 				StoryUpdateService.AddStoryBeat(
@@ -131,7 +172,7 @@ public class FrontEnd
 			case ConsoleKey.E:
 				if (this._currentStoryThread == null) { return; }
 				if (this._selectingNewStoryBeat) { return; }
-				if (this._selectedStoryBeatIndex == null) { return; }
+				if (this._selectedIndex == null) { return; }
 
 			 	Console.SetCursorPosition(0, 20);
 				Console.Write("New story beat name?");
@@ -140,7 +181,7 @@ public class FrontEnd
 				if (newName == string.Empty) { return; }
 
 				StoryUpdateService.RenameStoryBeat(
-					this._selectedStoryBeatIndex.Value,
+					this._selectedIndex.Value,
 					newName!,
 					this._currentStoryThread
 				);
@@ -148,7 +189,7 @@ public class FrontEnd
 
 			case ConsoleKey.Enter:
 				if (this._currentStoryThread == null
-					|| this._selectedStoryBeatIndex == null)
+					|| this._selectedIndex == null)
 				{
 					return;
 				}
@@ -156,18 +197,16 @@ public class FrontEnd
 				{
 					StoryUpdateService.UpdateStoryBeatOrder(
 						this._storyBeatToMove!,
-						this._selectedStoryBeatIndex.Value
+						this._selectedIndex.Value
 					);
 
 					this._storyBeatToMove = null;
-					this._selectedStoryBeatIndex = null;
-					this._selectingNewStoryBeat = false;
+					this._selectedIndex = null;
 					return;
 				}
 
 				this._storyBeatToMove = this._currentStoryThread
-					.StoryBeats[this._selectedStoryBeatIndex.Value];
-				this._selectingNewStoryBeat = true;
+					.StoryBeats[this._selectedIndex.Value];
 				break;
 		}
 	}
@@ -183,15 +222,19 @@ public class FrontEnd
 
 		foreach (var beat in thread.StoryBeats)
 		{
+			var highlightText =
+				this._currentlySelectedColumnType == ColumnType.Thread
+				&& beat.Order == this._selectedIndex;
+
 			renderer.Print();
 			renderer.Print(
 				$"{beat.Name}{(beat.Chapter != null ? $" (Chapter {beat.Chapter.Order + 1})" : "")}",
 				indentation: 2,
-				highlighted: beat.Order == this._selectedStoryBeatIndex);
+				highlighted: highlightText);
 		}
 	}
 
-	private static void RenderStory(Story story, TextRenderer renderer)
+	private void RenderStory(Story story, TextRenderer renderer)
 	{
 		renderer.Print(story.Name);
 		renderer.Print(new string('-', story.Name.Length));
@@ -199,10 +242,19 @@ public class FrontEnd
 		foreach (var chapter in story.Chapters)
 		{
 			var stringToPrint = $"{chapter.Order + 1}. {chapter.Name}";
+			var highlightText =
+				this._currentlySelectedColumnType == ColumnType.Story
+				&& chapter.Order == this._selectedIndex;
 
 			renderer.Print();
-			renderer.Print(stringToPrint, indentation: 2);
-			renderer.Print(new string('-', stringToPrint.Length), indentation: 2);
+			renderer.Print(
+				stringToPrint,
+				indentation: 2,
+				highlighted: highlightText);
+			renderer.Print(
+				new string('-', stringToPrint.Length),
+				indentation: 2,
+				highlighted: highlightText);
 
 			foreach (var beat in chapter.StoryBeats)
 			{
@@ -221,7 +273,7 @@ public class FrontEnd
 	{
 		if (this._currentStoryThread == null && !this._displayStory)
 		{
-			return (this._threadRenderer, null);
+			return (null, null);
 		}
 
 		var threadRenderer = this._threadRenderer;
@@ -229,7 +281,7 @@ public class FrontEnd
 		//TextRenderer? threadRenderer = null;
 		//TextRenderer? storyRenderer = null;
 
-		if (this._currentStoryThread != null && this._displayStory)
+		if (this._displayThread && this._displayStory)
 		{
 			var renderWidth = Console.WindowWidth / 2;
 			threadRenderer = this._threadRenderer;
@@ -249,7 +301,7 @@ public class FrontEnd
 			return (threadRenderer, storyRenderer);
 		}
 
-		if (this._currentStoryThread != null)
+		if (this._displayThread)
 		{
 			threadRenderer.Reset(
 				xPosition: 0,
@@ -268,7 +320,7 @@ public class FrontEnd
 			threadRenderer = null;
 		}
 
-		//var rendererToDisplay = this._currentStoryThread != null
+		//var rendererToDisplay = this._displayThread
 			//? threadRenderer
 			//: storyRenderer;
 		//rendererToDisplay.Reset(
@@ -277,10 +329,16 @@ public class FrontEnd
 			//width: Console.WindowWidth,
 			//height: Console.WindowHeight - 6);
 
-		//var rendererToHide = this._currentStoryThread != null
+		//var rendererToHide = this._displayThread
 			//? storyRenderer
 			//: threadRenderer;
 
 		return (threadRenderer, storyRenderer);
+	}
+
+	private enum ColumnType
+	{
+		Thread,
+		Story
 	}
 }

@@ -48,12 +48,24 @@ public class FrontEnd
 		switch (input.Key)
 		{
 			case ConsoleKey.D1:
-				this._currentStoryThread = this._story.Threads[0];
 				this._selectedStoryBeatIndex = null;
+				if (this._currentStoryThread == this._story.Threads[0])
+				{
+					this._currentStoryThread = null;
+					return;
+				}
+
+				this._currentStoryThread = this._story.Threads[0];
 				break;
 			case ConsoleKey.D2:
-				this._currentStoryThread = this._story.Threads[1];
 				this._selectedStoryBeatIndex = null;
+				if (this._currentStoryThread == this._story.Threads[1])
+				{
+					this._currentStoryThread = null;
+					return;
+				}
+
+				this._currentStoryThread = this._story.Threads[1];
 				break;
 			case ConsoleKey.D3:
 				this._displayStory = !this._displayStory;
@@ -227,12 +239,12 @@ public class FrontEnd
 				xPosition: 0,
 				yPosition: 2,
 				width: renderWidth,
-				height: Console.WindowHeight - 6);
+				height: Console.WindowHeight - Padding);
 			storyRenderer.Reset(
 				xPosition: renderWidth,
 				yPosition: 2,
 				width: renderWidth,
-				height: Console.WindowHeight - 6);
+				height: Console.WindowHeight - Padding);
 
 			return (threadRenderer, storyRenderer);
 		}
@@ -243,7 +255,7 @@ public class FrontEnd
 				xPosition: 0,
 				yPosition: 2,
 				width: Console.WindowWidth,
-				height: Console.WindowHeight - 6);
+				height: Console.WindowHeight - Padding);
 			storyRenderer = null;
 		}
 		else
@@ -252,7 +264,7 @@ public class FrontEnd
 				xPosition: 0,
 				yPosition: 2,
 				width: Console.WindowWidth,
-				height: Console.WindowHeight - 6);
+				height: Console.WindowHeight - Padding);
 			threadRenderer = null;
 		}
 

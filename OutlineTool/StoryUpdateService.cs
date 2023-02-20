@@ -51,6 +51,22 @@ public static class StoryUpdateService
 		storyThread.StoryBeats[index].Name = newName;
 	}
 
+	public static void AssignStoryBeatToChapter(
+		StoryBeat storyBeat,
+		Chapter chapter)
+	{
+		var existingChapter = storyBeat.Chapter;
+		if (existingChapter != null
+			&& !existingChapter.StoryBeats.Contains(storyBeat))
+		{
+			throw new ArgumentException("Something has gone horribly wrong! StoryBeat is not in the list for its associated Chapter");
+		}
+
+		existingChapter?.StoryBeats.Remove(storyBeat);
+		storyBeat.Chapter = chapter;
+		chapter.StoryBeats.Add(storyBeat);
+	}
+
 	private static void InsertBeatInternal(
 		int index,
 		StoryBeat storyBeat,

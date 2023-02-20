@@ -25,13 +25,19 @@ public class Program
 			- threads
 				* add beat to thread
 				* "drag" beat within thread
+				* rename thread
+				- delete beat (with confirmation)
 				- add a new thread
 				- switch between threads to view
+				- delete thread (with confirmation)
 			- chapters
 				- add chapter
 				- "drag" chapter around
 				- filter threads to display beats for? (stretch/not sure if worth)
-			- assign beat to chapter
+				- delete chapter (with confirmation)
+				- rename chapter
+			* assign beat to chapter
+				* change "selecting new" to just be computed property
 			- to start, consider not enforcing consistent order between threads/chapters
 				- if it's valuable, could offer a warning when dragging beats in a thread, and then unassigning from chapter
 				- and when moving between chapters, could offer a warning and then auto update thread order
@@ -43,6 +49,7 @@ public class Program
 				- maybe easy to build on thread/chapter situation
 		- consider updating render only when things are added
 			- may not need to bother with async at all
+			- can track previous console dimensions, and only render when they change (or on input)
 		- scrolling for rendering?
 	*/
 	private static async Task Main(string[] args)

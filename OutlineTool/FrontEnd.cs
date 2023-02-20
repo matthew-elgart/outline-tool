@@ -139,34 +139,33 @@ public class FrontEnd
 				}
 				break;
 
-			case ConsoleKey.N:
-				if (this._currentStoryThread == null) { return; }
+			case ConsoleKey.A:
+			case ConsoleKey.I:
+				if (!this._displayStory) { return; }
 				if (this._selectingNewStoryBeat) { return; }
+				if (this._selectedIndex == null) { return; }
 
-			 	Console.SetCursorPosition(0, 20);
-				Console.Write("New story beat name?");
-				Console.SetCursorPosition(0, 21);
-				var name = Console.ReadLine();
+				var name = GetNewBeatName();
 				if (name == string.Empty) { return; }
 
 				int index;
-				if (this._selectedIndex == null)
+				if (input.Key == ConsoleKey.A)
 				{
 					index = input.Modifiers == ConsoleModifiers.Shift
-						? 0
-						: this._currentStoryThread.StoryBeats.Count;
+						? this._currentStoryThread!.StoryBeats.Count
+						: this._selectedIndex.Value + 1;
 				}
 				else
 				{
 					index = input.Modifiers == ConsoleModifiers.Shift
-						? this._selectedIndex.Value
-						: this._selectedIndex.Value + 1;
+						? 0
+						: this._selectedIndex.Value;
 				}
 
 				StoryUpdateService.AddStoryBeat(
 					index,
 					name!,
-					this._currentStoryThread
+					this._currentStoryThread!
 				);
 				break;
 			case ConsoleKey.E:
@@ -188,25 +187,37 @@ public class FrontEnd
 				break;
 
 			case ConsoleKey.Enter:
-				if (this._currentStoryThread == null
-					|| this._selectedIndex == null)
+			  	var columnType = this._currentlySelectedColumnType;
+			 	if (columnType == null)
 				{
 					return;
 				}
 				if (this._selectingNewStoryBeat)
 				{
-					StoryUpdateService.UpdateStoryBeatOrder(
-						this._storyBeatToMove!,
-						this._selectedIndex.Value
-					);
+					if (columnType == ColumnType.Thread)
+					{
+						StoryUpdateService.UpdateStoryBeatOrder(
+							this._storyBeatToMove!,
+							this._selectedIndex!.Value
+						);
+					}
+					else
+					{
+						StoryUpdateService.AssignStoryBeatToChapter(
+							this._storyBeatToMove!,
+							this._story.Chapters[this._selectedIndex!
+								.Value]
+						);
+					}
 
+	 				this._selectFromRightColumn = false;
 					this._storyBeatToMove = null;
 					this._selectedIndex = null;
 					return;
 				}
 
-				this._storyBeatToMove = this._currentStoryThread
-					.StoryBeats[this._selectedIndex.Value];
+				this._storyBeatToMove = this._currentStoryThread!
+					.StoryBeats[this._selectedIndex!.Value];
 				break;
 		}
 	}
@@ -334,6 +345,14 @@ public class FrontEnd
 			//: threadRenderer;
 
 		return (threadRenderer, storyRenderer);
+	}
+
+	private static string GetNewBeatName()
+	{
+		Console.SetCursorPosition(0, 20);
+		Console.Write("New story beat name?");
+		Console.SetCursorPosition(0, 21);
+		return Console.ReadLine()!;
 	}
 
 	private enum ColumnType

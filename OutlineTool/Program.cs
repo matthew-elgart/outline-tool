@@ -48,6 +48,7 @@ public class Program
 			- decide on how to highlight and stuff
 			- nano-esque "user input area" at the bottom?
 				- maybe easy to build on thread/chapter situation
+			- bug: when not rendering on a spot, nothing gets erased
 		- consider updating render only when things are added
 			- may not need to bother with async at all
 			- can track previous console dimensions, and only render when they change (or on input)

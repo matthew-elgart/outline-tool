@@ -1,41 +1,37 @@
 // fine if this becomes not static later
 public static class StoryUpdateService
 {
-	public static void UpdateStoryBeatOrder(StoryBeat storyBeat, int index)
+	public static void UpdateStoryBeatOrder(
+		StoryBeat storyBeat,
+		int index,
+		IList<StoryBeat> storyBeats)
 	{
-		var storyThread = storyBeat.StoryThread;
-		var storyBeats = storyThread.StoryBeats;
-
 		if (!storyBeats.Contains(storyBeat))
 		{
 			throw new ArgumentException("Something has gone horribly wrong! StoryBeat is not in the list for its associated StoryThread");
 		}
 		if (index < 0 || index >= storyBeats.Count)
 		{
-			throw new IndexOutOfRangeException($"Index {index} out of range for story thread {storyThread.Name}");
+			throw new IndexOutOfRangeException($"Index {index} out of range for story beat {storyBeat.Name}");
 		};
 
 		storyBeats.Remove(storyBeat);
-		InsertBeatInternal(index, storyBeat, storyThread);
+		InsertBeatInternal(index, storyBeat, storyBeats);
 	}
 
 	public static void AddStoryBeat(
 		int index,
 		string name,
-		StoryThread storyThread)
+		List<StoryBeat> storyBeats)
 	{
-		if (index < 0 || index > storyThread.StoryBeats.Count)
+		if (index < 0 || index > storyBeats.Count)
 		{
-			throw new IndexOutOfRangeException($"Index {index} out of range for story thread {storyThread}");
+			throw new IndexOutOfRangeException($"Tried to create StoryBeat \"{name}\" at index {index}, but it was out of range");
 		}
 
-		var newStoryBeat = new StoryBeat
-		{
-			Name = name,
-			StoryThread = storyThread
-		};
+		var newStoryBeat = new StoryBeat { Name = name };
 
-		InsertBeatInternal(index, newStoryBeat, storyThread);
+		InsertBeatInternal(index, newStoryBeat, storyBeats);
 	}
 
 	public static void RenameStoryBeat(
@@ -70,9 +66,8 @@ public static class StoryUpdateService
 	private static void InsertBeatInternal(
 		int index,
 		StoryBeat storyBeat,
-		StoryThread storyThread)
+		IList<StoryBeat> storyBeats)
 	{
-		var storyBeats = storyThread.StoryBeats;
 		storyBeats.Insert(index, storyBeat);
 
 		// ensure that the Order property on the StoryBeats remains correct

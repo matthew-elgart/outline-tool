@@ -10,6 +10,8 @@ public class FrontEnd
 
 	private Story _story;
 	private StoryThread? _currentStoryThread;
+	private List<StoryBeat>? _currentStoryBeats =>
+		this._currentStoryThread?.StoryBeats;
 	private bool _displayThread => this._currentStoryThread != null;
 	private bool _displayStory;
 	private bool _oneColumnVisible =>
@@ -97,7 +99,7 @@ public class FrontEnd
 				}
 
 				var numItems = currentColumn == ColumnType.Thread
-					? this._currentStoryThread!.StoryBeats.Count
+					? this._currentStoryBeats!.Count
 					: this._story.Chapters.Count;
 				var newDownIndex = Math.Min(
 					this._selectedIndex!.Value + 1,
@@ -168,7 +170,7 @@ public class FrontEnd
 				StoryUpdateService.AddStoryBeat(
 					index,
 					name!,
-					this._currentStoryThread!
+					this._currentStoryBeats!
 				);
 				break;
 			case ConsoleKey.E:
@@ -201,7 +203,8 @@ public class FrontEnd
 					{
 						StoryUpdateService.UpdateStoryBeatOrder(
 							this._storyBeatToMove!,
-							this._selectedIndex!.Value
+							this._selectedIndex!.Value,
+							this._currentStoryBeats!
 						);
 					}
 					else

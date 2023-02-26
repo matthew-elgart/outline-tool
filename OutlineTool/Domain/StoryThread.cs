@@ -4,6 +4,5 @@ public class StoryThread
 
 	public ConsoleColor? TextColor { get; set; }
 	
-	// associated to StoryBeat.Order
 	public List<StoryBeat> StoryBeats { get; set; } = null!;
 }

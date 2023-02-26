@@ -9,7 +9,7 @@ public static class StoryUpdateService
 	{
 		if (!elements.Contains(element))
 		{
-			throw new ArgumentException("Element not found in the provided list; cannot update Element order");
+			throw new ArgumentException($"Element not found in the provided list; cannot update order for Element \"{element.Name}\"");
 		}
 		if (index < 0 || index >= elements.Count)
 		{
@@ -17,7 +17,8 @@ public static class StoryUpdateService
 		};
 
 		elements.Remove(element);
-		InsertBeatInternal(index, element, elements);
+		elements.Insert(index, element);
+		RefreshElementOrders(elements);
 	}
 
 	public static void AddElement<T>(
@@ -33,7 +34,29 @@ public static class StoryUpdateService
 
 		var newElement = new T { Name = name };
 
-		InsertBeatInternal(index, newElement, elements);
+		elements.Insert(index, newElement);
+		RefreshElementOrders(elements);
+	}
+
+	public static void DeleteElement<T>(
+		T element,
+		IList<T> elements)
+		where T : IOrderedElement
+	{
+		if (!elements.Contains(element))
+		{
+			throw new ArgumentException($"Element not found in the provided list; cannot delete Element \"{element.Name}\"");
+		}
+
+		elements.Remove(element);
+		RefreshElementOrders(elements);
+
+		// storyBeats don't get removed from chapters for free; need
+		// to do that ourselves
+		if (element is StoryBeat storyBeat)
+		{
+			storyBeat.Chapter?.StoryBeats.Remove(storyBeat);
+		}
 	}
 
 	public static void AssignStoryBeatToChapter(
@@ -52,14 +75,9 @@ public static class StoryUpdateService
 		chapter.StoryBeats.Add(storyBeat);
 	}
 
-	private static void InsertBeatInternal<T>(
-		int index,
-		T element,
-		IList<T> elements)
+	private static void RefreshElementOrders<T>(IList<T> elements)
 		where T : IOrderedElement
 	{
-		elements.Insert(index, element);
-
 		// ensure that the Order property on the elements remains correct
 		for (var i = 0; i < elements.Count; i++)
 		{

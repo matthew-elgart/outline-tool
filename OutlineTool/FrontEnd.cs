@@ -209,7 +209,10 @@ public class FrontEnd
 
 				if (confirmation == "y")
 				{
-
+					StoryUpdateService.DeleteElement(
+						this._currentStoryBeats!
+							[this._selectedIndex!.Value],
+						this._currentStoryBeats!);
 				}
 
 				this._selectedIndex = null;
@@ -246,8 +249,8 @@ public class FrontEnd
 					return;
 				}
 
-				this._storyBeatToMove = this._currentStoryThread!
-					.StoryBeats[this._selectedIndex!.Value];
+				this._storyBeatToMove = this._currentStoryBeats!
+					[this._selectedIndex!.Value];
 				break;
 		}
 	}

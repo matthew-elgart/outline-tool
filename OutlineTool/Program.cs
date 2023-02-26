@@ -27,7 +27,7 @@ public class Program
 					* refactor this like talking with michael
 				* "drag" beat within thread
 				* rename thread
-				+ delete beat (with confirmation)
+				* delete beat (with confirmation)
 				- add a new thread
 				- switch between threads to view
 				- delete thread (with confirmation)

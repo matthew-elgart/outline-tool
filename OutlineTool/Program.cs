@@ -34,9 +34,9 @@ public class Program
 			- chapters
 				+ add chapter
 				+ "drag" chapter around
-				- filter threads to display beats for? (stretch/not sure if worth)
 				+ delete chapter (with confirmation)
 				+ rename chapter
+				- filter threads to display beats for? (stretch/not sure if worth)
 			* assign beat to chapter
 				* change "selecting new" to just be computed property
 				* to start, consider not enforcing consistent order between threads/chapters

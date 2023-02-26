@@ -143,7 +143,6 @@ public class FrontEnd
 
 			case ConsoleKey.A:
 			case ConsoleKey.I:
-				if (!this._displayStory) { return; }
 				if (this._selectingNewStoryBeat) { return; }
 				if (this._selectedIndex == null) { return; }
 
@@ -167,7 +166,7 @@ public class FrontEnd
 						.Count
 				};
 
-				StoryUpdateService.AddStoryBeat(
+				StoryUpdateService.AddElement(
 					index,
 					name!,
 					this._currentStoryBeats!
@@ -184,11 +183,36 @@ public class FrontEnd
 				var newName = Console.ReadLine();
 				if (newName == string.Empty) { return; }
 
-				StoryUpdateService.RenameStoryBeat(
-					this._selectedIndex.Value,
-					newName!,
-					this._currentStoryThread
-				);
+				var storyBeat = this._currentStoryBeats!
+					[this._selectedIndex.Value];
+				storyBeat.Name = newName!;
+				break;
+			case ConsoleKey.D:
+				if (!this._displayThread) { return; }
+				if (this._selectingNewStoryBeat) { return; }
+				if (this._selectedIndex == null) { return; }
+
+				var confirmation = string.Empty;
+				var isThread =
+					this._currentlySelectedColumnType == ColumnType.Thread;
+				var thingToDelete = isThread
+					? "story beat"
+					: "chapter";
+				do
+				{
+					Console.SetCursorPosition(0, 20);
+					Console.WriteLine(new string(' ', Console.WindowWidth));
+					Console.SetCursorPosition(0, 20);
+					Console.Write($"DELETE this {thingToDelete}? (y/n) ");
+					confirmation = Console.ReadLine();
+				} while (!new[] { "y", "n" }.Contains(confirmation));
+
+				if (confirmation == "y")
+				{
+
+				}
+
+				this._selectedIndex = null;
 				break;
 
 			case ConsoleKey.Enter:
@@ -201,7 +225,7 @@ public class FrontEnd
 				{
 					if (columnType == ColumnType.Thread)
 					{
-						StoryUpdateService.UpdateStoryBeatOrder(
+						StoryUpdateService.UpdateElementOrder(
 							this._storyBeatToMove!,
 							this._selectedIndex!.Value,
 							this._currentStoryBeats!

@@ -1,50 +1,39 @@
 // fine if this becomes not static later
 public static class StoryUpdateService
 {
-	public static void UpdateStoryBeatOrder(
-		StoryBeat storyBeat,
+	public static void UpdateElementOrder<T>(
+		T element,
 		int index,
-		IList<StoryBeat> storyBeats)
+		IList<T> elements)
+		where T : IOrderedElement
 	{
-		if (!storyBeats.Contains(storyBeat))
+		if (!elements.Contains(element))
 		{
-			throw new ArgumentException("Something has gone horribly wrong! StoryBeat is not in the list for its associated StoryThread");
+			throw new ArgumentException("Element not found in the provided list; cannot update Element order");
 		}
-		if (index < 0 || index >= storyBeats.Count)
+		if (index < 0 || index >= elements.Count)
 		{
-			throw new IndexOutOfRangeException($"Index {index} out of range for story beat {storyBeat.Name}");
+			throw new IndexOutOfRangeException($"Index {index} out of range for updating element {element.Name}");
 		};
 
-		storyBeats.Remove(storyBeat);
-		InsertBeatInternal(index, storyBeat, storyBeats);
+		elements.Remove(element);
+		InsertBeatInternal(index, element, elements);
 	}
 
-	public static void AddStoryBeat(
+	public static void AddElement<T>(
 		int index,
 		string name,
-		List<StoryBeat> storyBeats)
+		List<T> elements)
+		where T : IOrderedElement, new()
 	{
-		if (index < 0 || index > storyBeats.Count)
+		if (index < 0 || index > elements.Count)
 		{
-			throw new IndexOutOfRangeException($"Tried to create StoryBeat \"{name}\" at index {index}, but it was out of range");
+			throw new IndexOutOfRangeException($"Tried to create Element \"{name}\" at index {index}, but it was out of range");
 		}
 
-		var newStoryBeat = new StoryBeat { Name = name };
+		var newElement = new T { Name = name };
 
-		InsertBeatInternal(index, newStoryBeat, storyBeats);
-	}
-
-	public static void RenameStoryBeat(
-		int index,
-		string newName,
-		StoryThread storyThread)
-	{
-		if (index < 0 || index >= storyThread.StoryBeats.Count)
-		{
-			throw new IndexOutOfRangeException($"Index {index} out of range for story thread {storyThread}");
-		}
-
-		storyThread.StoryBeats[index].Name = newName;
+		InsertBeatInternal(index, newElement, elements);
 	}
 
 	public static void AssignStoryBeatToChapter(
@@ -63,17 +52,18 @@ public static class StoryUpdateService
 		chapter.StoryBeats.Add(storyBeat);
 	}
 
-	private static void InsertBeatInternal(
+	private static void InsertBeatInternal<T>(
 		int index,
-		StoryBeat storyBeat,
-		IList<StoryBeat> storyBeats)
+		T element,
+		IList<T> elements)
+		where T : IOrderedElement
 	{
-		storyBeats.Insert(index, storyBeat);
+		elements.Insert(index, element);
 
-		// ensure that the Order property on the StoryBeats remains correct
-		for (var i = 0; i < storyBeats.Count; i++)
+		// ensure that the Order property on the elements remains correct
+		for (var i = 0; i < elements.Count; i++)
 		{
-			storyBeats[i].Order = i;
+			elements[i].Order = i;
 		}
 	}
 }

@@ -24,23 +24,24 @@ public class Program
 		- user actions (while handling navigation props)
 			- threads
 				* add beat to thread
+					* refactor this like talking with michael
 				* "drag" beat within thread
 				* rename thread
-				- delete beat (with confirmation)
+				+ delete beat (with confirmation)
 				- add a new thread
 				- switch between threads to view
 				- delete thread (with confirmation)
 			- chapters
-				- add chapter
-				- "drag" chapter around
+				+ add chapter
+				+ "drag" chapter around
 				- filter threads to display beats for? (stretch/not sure if worth)
-				- delete chapter (with confirmation)
-				- rename chapter
+				+ delete chapter (with confirmation)
+				+ rename chapter
 			* assign beat to chapter
 				* change "selecting new" to just be computed property
-			- to start, consider not enforcing consistent order between threads/chapters
-				- if it's valuable, could offer a warning when dragging beats in a thread, and then unassigning from chapter
-				- and when moving between chapters, could offer a warning and then auto update thread order
+				* to start, consider not enforcing consistent order between threads/chapters
+					- if it's valuable, could offer a warning when dragging beats in a thread, and then unassigning from chapter
+					- and when moving between chapters, could offer a warning and then auto update thread order
 			- toggle colors
 		- display errors better
 		- make all those user actions look nice

@@ -148,19 +148,22 @@ public class FrontEnd
 				var name = GetNewBeatName();
 				if (name == string.Empty) { return; }
 
-				int index;
-				if (input.Key == ConsoleKey.A)
+				var append = input.Key == ConsoleKey.A;
+				var shift = input.Modifiers == ConsoleModifiers.Shift;
+
+				var index = (append, shift) switch
 				{
-					index = input.Modifiers == ConsoleModifiers.Shift
-						? this._currentStoryThread!.StoryBeats.Count
-						: this._selectedIndex.Value + 1;
-				}
-				else
-				{
-					index = input.Modifiers == ConsoleModifiers.Shift
-						? 0
-						: this._selectedIndex.Value;
-				}
+					// lowercase i
+					(false, false) => this._selectedIndex.Value,
+					// lowercase a
+					(true, false) => this._selectedIndex.Value + 1,
+					// uppercase I
+					(false, true) => 0,
+					// uppercase A
+					(true, true) => this._currentStoryThread!
+						.StoryBeats
+						.Count
+				};
 
 				StoryUpdateService.AddStoryBeat(
 					index,
@@ -169,7 +172,7 @@ public class FrontEnd
 				);
 				break;
 			case ConsoleKey.E:
-				if (this._currentStoryThread == null) { return; }
+				if (!this._displayThread) { return; }
 				if (this._selectingNewStoryBeat) { return; }
 				if (this._selectedIndex == null) { return; }
 

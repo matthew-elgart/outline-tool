@@ -1,3 +1,5 @@
+using System.Collections;
+
 // fine if this becomes not static later
 public static class StoryUpdateService
 {
@@ -75,7 +77,7 @@ public static class StoryUpdateService
 		chapter.StoryBeats.Add(storyBeat);
 	}
 
-	private static void RefreshElementOrders<T>(IList<T> elements)
+	public static void RefreshElementOrders<T>(IList<T> elements)
 		where T : IOrderedElement
 	{
 		// ensure that the Order property on the elements remains correct
@@ -83,5 +85,28 @@ public static class StoryUpdateService
 		{
 			elements[i].Order = i;
 		}
+	}
+}
+
+public interface IOrderedElementList : IList
+{
+	void InsertNewElement(int index, string name);
+}
+
+public class OrderedElementList<T> : List<T>, IOrderedElementList
+	where T : IOrderedElement, new()
+{
+	public void InsertNewElement(int index, string name)
+	{
+		if (index < 0 || index > this.Count)
+		{
+			throw new IndexOutOfRangeException($"Tried to create element \"{name}\" at index {index}, but it was out of range");
+		}
+
+		var element = new T();
+		element.Name = name;
+		this.Insert(index, element);
+
+		StoryUpdateService.RefreshElementOrders(this);
 	}
 }

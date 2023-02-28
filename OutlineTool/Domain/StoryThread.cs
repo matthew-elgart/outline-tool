@@ -4,5 +4,5 @@ public class StoryThread
 
 	public ConsoleColor? TextColor { get; set; }
 	
-	public List<StoryBeat> StoryBeats { get; set; } = null!;
+	public OrderedElementList<StoryBeat> StoryBeats { get; set; } = null!;
 }

@@ -10,7 +10,7 @@ public static class StoryInfoProvider
 		var story = new Story
 		{
 			Name = "Eddie's Million Dollar Cook-Off",
-			Chapters = new List<Chapter>
+			Chapters = new()
 			{
 				chapter1,
 				chapter2,

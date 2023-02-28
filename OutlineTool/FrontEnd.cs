@@ -10,7 +10,7 @@ public class FrontEnd
 
 	private Story _story;
 	private StoryThread? _currentStoryThread;
-	private List<StoryBeat>? _currentStoryBeats =>
+	private OrderedElementList<StoryBeat>? _currentStoryBeats =>
 		this._currentStoryThread?.StoryBeats;
 	private bool _displayThread => this._currentStoryThread != null;
 	private bool _displayStory;
@@ -146,8 +146,15 @@ public class FrontEnd
 				if (this._selectingNewStoryBeat) { return; }
 				if (this._selectedIndex == null) { return; }
 
-				var name = GetNewBeatName();
+				var isThread = this._currentlySelectedColumnType
+					== ColumnType.Thread;
+
+				var name = GetNewElementName(isThread);
 				if (name == string.Empty) { return; }
+
+				IOrderedElementList list = isThread
+					? this._currentStoryBeats!
+					: this._story.Chapters;
 
 				var append = input.Key == ConsoleKey.A;
 				var shift = input.Modifiers == ConsoleModifiers.Shift;
@@ -161,16 +168,10 @@ public class FrontEnd
 					// uppercase I
 					(false, true) => 0,
 					// uppercase A
-					(true, true) => this._currentStoryThread!
-						.StoryBeats
-						.Count
+					(true, true) => list.Count
 				};
 
-				StoryUpdateService.AddElement(
-					index,
-					name!,
-					this._currentStoryBeats!
-				);
+				list.InsertNewElement(index, name);
 				break;
 			case ConsoleKey.E:
 				if (!this._displayThread) { return; }
@@ -193,9 +194,9 @@ public class FrontEnd
 				if (this._selectedIndex == null) { return; }
 
 				var confirmation = string.Empty;
-				var isThread =
+				var isThread2 =
 					this._currentlySelectedColumnType == ColumnType.Thread;
-				var thingToDelete = isThread
+				var thingToDelete = isThread2
 					? "story beat"
 					: "chapter";
 				do
@@ -380,10 +381,14 @@ public class FrontEnd
 		return (threadRenderer, storyRenderer);
 	}
 
-	private static string GetNewBeatName()
+	private static string GetNewElementName(bool isThread)
 	{
+		var thingToAdd = isThread
+			? "story beat"
+			: "chapter";
+
 		Console.SetCursorPosition(0, 20);
-		Console.Write("New story beat name?");
+		Console.Write($"New {thingToAdd} name?");
 		Console.SetCursorPosition(0, 21);
 		return Console.ReadLine()!;
 	}

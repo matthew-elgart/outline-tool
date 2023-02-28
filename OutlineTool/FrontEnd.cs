@@ -25,11 +25,10 @@ public class FrontEnd
 				? ColumnType.Story
 				: ColumnType.Thread;
 
-
 	private int? _selectedIndex;
 	private bool _selectFromRightColumn;
-	private bool _selectingNewStoryBeat => this._storyBeatToMove != null;
-	private StoryBeat? _storyBeatToMove;
+	private bool _selectingNewElement => this._selectedElement != null;
+	private IOrderedElement? _selectedElement;
 
 	private TextRenderer _threadRenderer = new();
 	private TextRenderer _storyRenderer = new();
@@ -143,7 +142,7 @@ public class FrontEnd
 
 			case ConsoleKey.A:
 			case ConsoleKey.I:
-				if (this._selectingNewStoryBeat) { return; }
+				if (this._selectingNewElement) { return; }
 				if (this._selectedIndex == null) { return; }
 
 				var isThread = this._currentlySelectedColumnType
@@ -175,7 +174,7 @@ public class FrontEnd
 				break;
 			case ConsoleKey.E:
 				if (!this._displayThread) { return; }
-				if (this._selectingNewStoryBeat) { return; }
+				if (this._selectingNewElement) { return; }
 				if (this._selectedIndex == null) { return; }
 
 			 	Console.SetCursorPosition(0, 20);
@@ -190,7 +189,7 @@ public class FrontEnd
 				break;
 			case ConsoleKey.D:
 				if (!this._displayThread) { return; }
-				if (this._selectingNewStoryBeat) { return; }
+				if (this._selectingNewElement) { return; }
 				if (this._selectedIndex == null) { return; }
 
 				var confirmation = string.Empty;
@@ -225,33 +224,37 @@ public class FrontEnd
 				{
 					return;
 				}
-				if (this._selectingNewStoryBeat)
-				{
-					if (columnType == ColumnType.Thread)
-					{
-						StoryUpdateService.UpdateElementOrder(
-							this._storyBeatToMove!,
-							this._selectedIndex!.Value,
-							this._currentStoryBeats!
-						);
-					}
-					else
-					{
-						StoryUpdateService.AssignStoryBeatToChapter(
-							this._storyBeatToMove!,
-							this._story.Chapters[this._selectedIndex!
-								.Value]
-						);
-					}
 
-	 				this._selectFromRightColumn = false;
-					this._storyBeatToMove = null;
-					this._selectedIndex = null;
+				var elements = this.GetCurrentElements();
+
+				// if nothing is selected, then select where cursor is
+				if (!this._selectingNewElement)
+				{
+					this._selectedElement = this.GetCurrentElements()
+						[this._selectedIndex!.Value];
 					return;
 				}
 
-				this._storyBeatToMove = this._currentStoryBeats!
-					[this._selectedIndex!.Value];
+				// if user has selected two elements in the same list,
+				//then they are "dragging" them into a new order
+				if (elements!.GetElementType() == this._selectedElement!.GetType())
+				{
+					elements.UpdateElementOrder(this._selectedElement, this._selectedIndex!.Value);
+				}
+				// special case: user selected a story beat and "dragged"
+				// it to the story column to assign it to a chapter
+				else if (this._selectedElement is StoryBeat storyBeat1
+					&& columnType == ColumnType.Story)
+				{
+					StoryUpdateService.AssignStoryBeatToChapter(
+						storyBeat1,
+						this._story.Chapters[this._selectedIndex!
+							.Value]);
+				}
+
+				this._selectFromRightColumn = false;
+				this._selectedElement = null;
+				this._selectedIndex = null;
 				break;
 		}
 	}
@@ -391,6 +394,23 @@ public class FrontEnd
 		Console.Write($"New {thingToAdd} name?");
 		Console.SetCursorPosition(0, 21);
 		return Console.ReadLine()!;
+	}
+
+	// returns the list of elements that correspond to the cursor's current location
+	private IOrderedElementList GetCurrentElements()
+	{
+		var columnType = this._currentlySelectedColumnType;
+		if (columnType == null) { throw new ArgumentException("columnType can't be null when getting current elements"); }
+
+		IOrderedElementList? result = columnType.Value switch
+		{
+			ColumnType.Thread => this._currentStoryBeats,
+			ColumnType.Story => this._story.Chapters,
+			_ => throw new ArgumentOutOfRangeException(nameof(columnType))
+		};
+
+		if (result == null) { throw new ArgumentException("got a null element list for currently selected column type, which shouldn't be possible"); }
+		return result;
 	}
 
 	private enum ColumnType

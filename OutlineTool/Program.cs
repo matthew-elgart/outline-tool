@@ -32,8 +32,8 @@ public class Program
 				- switch between threads to view
 				- delete thread (with confirmation)
 			- chapters
-				+ add chapter
-				+ "drag" chapter around
+				* add chapter
+				* "drag" chapter around
 				+ delete chapter (with confirmation)
 				+ rename chapter
 				- filter threads to display beats for? (stretch/not sure if worth)

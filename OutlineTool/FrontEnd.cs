@@ -20,8 +20,8 @@ public class FrontEnd
 	};
 
 	private Cursor _cursor;
-	private IOrderedElement? _selectedElement;
-	private bool _selectingNewElement => this._selectedElement != null;
+	private (ColumnType Column, int Index)? _selection;
+	private bool _selectingNewElement => this._selection != null;
 
 	private TextRenderer _threadRenderer = new();
 	private TextRenderer _storyRenderer = new();
@@ -193,33 +193,37 @@ public class FrontEnd
 			case ConsoleKey.Enter:
 				if (!this._cursor.Visible) { return; }
 
-				var elements = this.GetCurrentElements();
-
 				// if nothing is selected, then select where cursor is
 				if (!this._selectingNewElement)
 				{
-					this._selectedElement = this.GetCurrentElements()
-						[this._cursor.Index];
+					this._selection = (this._cursor.Column, this._cursor.Index);
 					return;
 				}
 
+				var selection = this._selection!.Value;
+				var elements = this.GetCurrentElements();
+
 				// if user has selected two elements in the same list,
 				//then they are "dragging" them into a new order
-				if (elements!.GetElementType() == this._selectedElement!.GetType())
+				if (this._cursor.Column == selection.Column)
 				{
-					elements.UpdateElementOrder(this._selectedElement, this._cursor.Index);
+					elements.UpdateElementOrder(
+						selection.Index,
+						this._cursor.Index);
 				}
 				// special case: user selected a story beat and "dragged"
 				// it to the story column to assign it to a chapter
-				else if (this._selectedElement is StoryBeat storyBeat1
+				else if (selection.Column == ColumnType.Thread
 					&& this._cursor.Column == ColumnType.Story)
 				{
+					var storyBeat = this._currentStoryThread!
+						.StoryBeats[selection.Index];
 					StoryUpdateService.AssignStoryBeatToChapter(
-						storyBeat1,
+						storyBeat,
 						this._story.Chapters[this._cursor.Index]);
 				}
 
-				this._selectedElement = null;
+				this._selection = null;
 				this._cursor.Reset();
 				break;
 		}
@@ -411,25 +415,25 @@ public class FrontEnd
 		public void Left()
 		{
 			this.Visible = true;
+			this._index = 0;
 
 			if (this._parent._displayThread
 				&& this._parent._displayStory
 				&& this._selectFromRightColumn)
 			{
 				this._selectFromRightColumn = false;
-				this._index = 0;
 			}
 		}
 		public void Right()
 		{
 			this.Visible = true;
+			this._index = 0;
 
 			if (this._parent._displayThread
 				&& this._parent._displayStory
 				&& !this._selectFromRightColumn)
 			{
 				this._selectFromRightColumn = true;
-				this._index = 0;
 			}
 		}
 

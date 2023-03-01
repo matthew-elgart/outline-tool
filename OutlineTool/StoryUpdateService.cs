@@ -1,30 +1,6 @@
-using System.Collections;
-
 // fine if this becomes not static later
 public static class StoryUpdateService
 {
-	// TODO: remove. no references
-	public static void DeleteElement<T>(
-		T element,
-		IList<T> elements)
-		where T : IOrderedElement
-	{
-		if (!elements.Contains(element))
-		{
-			throw new ArgumentException($"Element not found in the provided list; cannot delete Element \"{element.Name}\"");
-		}
-
-		elements.Remove(element);
-		RefreshElementOrders(elements);
-
-		// storyBeats don't get removed from chapters for free; need
-		// to do that ourselves
-		if (element is StoryBeat storyBeat)
-		{
-			storyBeat.Chapter?.StoryBeats.Remove(storyBeat);
-		}
-	}
-
 	public static void AssignStoryBeatToChapter(
 		StoryBeat storyBeat,
 		Chapter chapter)
@@ -40,23 +16,13 @@ public static class StoryUpdateService
 		storyBeat.Chapter = chapter;
 		chapter.StoryBeats.Add(storyBeat);
 	}
-
-	private static void RefreshElementOrders<T>(IList<T> elements)
-		where T : IOrderedElement
-	{
-		// ensure that the Order property on the elements remains correct
-		for (var i = 0; i < elements.Count; i++)
-		{
-			elements[i].Order = i;
-		}
-	}
 }
 
 public interface IOrderedElementList
 {
 	Type GetElementType();
 	void InsertNewElement(int index, string name);
-	void UpdateElementOrder(IOrderedElement element, int index);
+	void UpdateElementOrder(int oldIndex, int newIndex);
 	void DeleteElement(int index);
 	int Count { get; }
 	IOrderedElement this[int index] { get; }
@@ -81,21 +47,22 @@ public class OrderedElementList<T> : List<T>, IOrderedElementList
 		this.RefreshElementOrders();
 	}
 
-	public void UpdateElementOrder(IOrderedElement element, int index)
+	public void UpdateElementOrder(int oldIndex, int newIndex)
 	{
-		var tElement = (T)element;
-
-		if (!this.Contains(tElement))
+		if (oldIndex < 0 || oldIndex >= this.Count)
 		{
-			throw new ArgumentException($"Element not found in the provided list; cannot update order for element \"{tElement.Name}\"");
+			throw new IndexOutOfRangeException($"Index {oldIndex} out of range for order update");
 		}
-		if (index < 0 || index >= this.Count)
+
+		var element = this[oldIndex];
+
+		if (newIndex < 0 || newIndex >= this.Count)
 		{
-			throw new IndexOutOfRangeException($"Index {index} out of range when updating element {tElement.Name}");
+			throw new IndexOutOfRangeException($"Index {newIndex} out of range when updating element {element.Name}");
 		};
 
-		this.Remove(tElement);
-		this.Insert(index, tElement);
+		this.Remove(element);
+		this.Insert(newIndex, element);
 		RefreshElementOrders();
 	}
 

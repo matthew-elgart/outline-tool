@@ -101,7 +101,7 @@ public class Program
 		{
 			if (!handlingInput)
 			{
-				frontEnd.Render(story);
+				frontEnd.Render();
 			}
 
 			await Task.Delay(tickRate);

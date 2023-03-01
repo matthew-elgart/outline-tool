@@ -12,16 +12,6 @@ public class FrontEnd
 	private StoryThread? _currentStoryThread;
 	private bool _displayThread => this._currentStoryThread != null;
 	private bool _displayStory;
-	private bool _oneColumnVisible =>
-		this._displayThread ^ this._displayStory;
-	private ColumnType? _currentlySelectedColumnType =>
-		this._selectedIndex == null ? null
-			: this._oneColumnVisible ? this._displayThread
-				? ColumnType.Thread
-				: ColumnType.Story
-			: this._selectFromRightColumn
-				? ColumnType.Story
-				: ColumnType.Thread;
 	private Dictionary<ColumnType, string> _columnTypeNames = new()
 	{
 		{ ColumnType.Thread, "story beat" },
@@ -29,8 +19,7 @@ public class FrontEnd
 		//{ ColumnType.Threads, "story thread" }
 	};
 
-	private int? _selectedIndex;
-	private bool _selectFromRightColumn;
+	private Cursor _cursor;
 	private IOrderedElement? _selectedElement;
 	private bool _selectingNewElement => this._selectedElement != null;
 
@@ -40,9 +29,10 @@ public class FrontEnd
 	public FrontEnd(Story story)
 	{
 		this._story = story;
+		this._cursor = new(this);
 	}
 
-	public void Render(Story story)
+	public void Render()
 	{
 		var (threadRenderer, storyRenderer) = this.GetConfiguredRenderers();
 
@@ -67,7 +57,7 @@ public class FrontEnd
 		switch (input.Key)
 		{
 			case ConsoleKey.D1:
-				this._selectedIndex = null;
+				this._cursor.Visible = false;
 				if (this._currentStoryThread == this._story.Threads[0])
 				{
 					this._currentStoryThread = null;
@@ -77,7 +67,7 @@ public class FrontEnd
 				this._currentStoryThread = this._story.Threads[0];
 				break;
 			case ConsoleKey.D2:
-				this._selectedIndex = null;
+				this._cursor.Visible = false;
 				if (this._currentStoryThread == this._story.Threads[1])
 				{
 					this._currentStoryThread = null;
@@ -87,76 +77,34 @@ public class FrontEnd
 				this._currentStoryThread = this._story.Threads[1];
 				break;
 			case ConsoleKey.D3:
-			 	this._selectedIndex = null;
-				this._selectFromRightColumn = false;
+				this._cursor.Visible = false;
 				this._displayStory = !this._displayStory;
 				break;
 
 			case ConsoleKey.DownArrow:
 			case ConsoleKey.J:
-				var currentColumn = this._currentlySelectedColumnType;
-				if (currentColumn == null)
-				{
-					this._selectedIndex = 0;
-					return;
-				}
-
-				var numItems = this.GetCurrentElements().Count;
-				var newDownIndex = Math.Min(
-					this._selectedIndex!.Value + 1,
-					numItems - 1);
-				this._selectedIndex = newDownIndex;
+			 	this._cursor.Down();
 				break;
 			case ConsoleKey.UpArrow:
 			case ConsoleKey.K:
-				if (this._selectedIndex == null)
-				{
-					this._selectedIndex = 0;
-					return;
-				}
-				var newUpIndex = Math.Max(
-					this._selectedIndex.Value - 1,
-					0);
-				this._selectedIndex = newUpIndex;
+				this._cursor.Up();
 				break;
 			case ConsoleKey.RightArrow:
 			case ConsoleKey.L:
-				if (this._selectedIndex == null)
-				{
-					this._selectedIndex = 0;
-					return;
-				}
-				if (this._displayThread
-					&& this._displayStory
-					&& !this._selectFromRightColumn)
-				{
-					this._selectFromRightColumn = true;
-					this._selectedIndex = 0;
-				}
+				this._cursor.Right();
 				break;
 			case ConsoleKey.LeftArrow:
 			case ConsoleKey.H:
-				if (this._selectedIndex == null)
-				{
-					this._selectedIndex = 0;
-					return;
-				}
-				if (this._displayThread
-					&& this._displayStory
-					&& this._selectFromRightColumn)
-				{
-					this._selectFromRightColumn = false;
-					this._selectedIndex = 0;
-				}
+				this._cursor.Left();
 				break;
 
 			case ConsoleKey.A:
 			case ConsoleKey.I:
 				if (this._selectingNewElement) { return; }
-				if (this._selectedIndex == null) { return; }
+				if (!this._cursor.Visible) { return; }
 
 				var thingToAdd = this._columnTypeNames
-					[this._currentlySelectedColumnType!.Value];
+					[this._cursor.Column];
 
 			 	Console.SetCursorPosition(0, 20);
 				Console.Write($"New {thingToAdd} name?");
@@ -172,9 +120,9 @@ public class FrontEnd
 				var index = (append, shift) switch
 				{
 					// lowercase i
-					(false, false) => this._selectedIndex.Value,
+					(false, false) => this._cursor.Index,
 					// lowercase a
-					(true, false) => this._selectedIndex.Value + 1,
+					(true, false) => this._cursor.Index + 1,
 					// uppercase I
 					(false, true) => 0,
 					// uppercase A
@@ -182,14 +130,14 @@ public class FrontEnd
 				};
 
 				list.InsertNewElement(index, name!);
-				this._selectedIndex = null;
+				this._cursor.Visible = false;
 				break;
 			case ConsoleKey.E:
 				if (this._selectingNewElement) { return; }
-				if (this._selectedIndex == null) { return; }
+				if (!this._cursor.Visible) { return; }
 
 				var thingToEdit = this._columnTypeNames
-					[this._currentlySelectedColumnType!.Value];
+					[this._cursor.Column];
 
 			 	Console.SetCursorPosition(0, 20);
 				Console.Write($"New {thingToEdit} name?");
@@ -198,16 +146,16 @@ public class FrontEnd
 				if (newName == string.Empty) { return; }
 
 				var element = this.GetCurrentElements()
-					[this._selectedIndex.Value];
+					[this._cursor.Index];
 				element.Name = newName!;
 				break;
 			case ConsoleKey.D:
 				if (this._selectingNewElement) { return; }
-				if (this._selectedIndex == null) { return; }
+				if (!this._cursor.Visible) { return; }
 
 				var confirmation = string.Empty;
 				var thingToDelete = this._columnTypeNames
-					[this._currentlySelectedColumnType!.Value];
+					[this._cursor.Column];
 				do
 				{
 					Console.SetCursorPosition(0, 20);
@@ -220,18 +168,14 @@ public class FrontEnd
 				if (confirmation == "y")
 				{
 					this.GetCurrentElements()
-						.DeleteElement(this._selectedIndex!.Value);
+						.DeleteElement(this._cursor.Index);
 				}
 
-				this._selectedIndex = null;
+				this._cursor.Visible = false;
 				break;
 
 			case ConsoleKey.Enter:
-			  	var columnType = this._currentlySelectedColumnType;
-			 	if (columnType == null)
-				{
-					return;
-				}
+				if (!this._cursor.Visible) { return; }
 
 				var elements = this.GetCurrentElements();
 
@@ -239,7 +183,7 @@ public class FrontEnd
 				if (!this._selectingNewElement)
 				{
 					this._selectedElement = this.GetCurrentElements()
-						[this._selectedIndex!.Value];
+						[this._cursor.Index];
 					return;
 				}
 
@@ -247,21 +191,20 @@ public class FrontEnd
 				//then they are "dragging" them into a new order
 				if (elements!.GetElementType() == this._selectedElement!.GetType())
 				{
-					elements.UpdateElementOrder(this._selectedElement, this._selectedIndex!.Value);
+					elements.UpdateElementOrder(this._selectedElement, this._cursor.Index);
 				}
 				// special case: user selected a story beat and "dragged"
 				// it to the story column to assign it to a chapter
 				else if (this._selectedElement is StoryBeat storyBeat1
-					&& columnType == ColumnType.Story)
+					&& this._cursor.Column == ColumnType.Story)
 				{
 					StoryUpdateService.AssignStoryBeatToChapter(
 						storyBeat1,
-						this._story.Chapters[this._selectedIndex!
-							.Value]);
+						this._story.Chapters[this._cursor.Index]);
 				}
 
 				this._selectedElement = null;
-				this._selectedIndex = null;
+				this._cursor.Visible = false;
 				break;
 		}
 	}
@@ -278,8 +221,8 @@ public class FrontEnd
 		foreach (var beat in thread.StoryBeats)
 		{
 			var highlightText =
-				this._currentlySelectedColumnType == ColumnType.Thread
-				&& beat.Order == this._selectedIndex;
+				this._cursor.Column == ColumnType.Thread
+				&& beat.Order == this._cursor.Index;
 
 			renderer.Print();
 			renderer.Print(
@@ -298,8 +241,8 @@ public class FrontEnd
 		{
 			var stringToPrint = $"{chapter.Order + 1}. {chapter.Name}";
 			var highlightText =
-				this._currentlySelectedColumnType == ColumnType.Story
-				&& chapter.Order == this._selectedIndex;
+				this._cursor.Column == ColumnType.Story
+				&& chapter.Order == this._cursor.Index;
 
 			renderer.Print();
 			renderer.Print(
@@ -394,14 +337,13 @@ public class FrontEnd
 	// returns the list of elements that correspond to the cursor's current location
 	private IOrderedElementList GetCurrentElements()
 	{
-		var columnType = this._currentlySelectedColumnType;
-		if (columnType == null) { throw new ArgumentException("columnType can't be null when getting current elements"); }
+		if (!this._cursor.Visible) { throw new ArgumentException("cursor must be visible when getting current elements"); }
 
-		IOrderedElementList? result = columnType.Value switch
+		IOrderedElementList? result = this._cursor.Column switch
 		{
 			ColumnType.Thread => this._currentStoryThread?.StoryBeats,
 			ColumnType.Story => this._story.Chapters,
-			_ => throw new ArgumentOutOfRangeException(nameof(columnType))
+			_ => throw new ArgumentOutOfRangeException(nameof(this._cursor.Column))
 		};
 
 		if (result == null) { throw new ArgumentException("got a null element list for currently selected column type, which shouldn't be possible"); }
@@ -412,5 +354,90 @@ public class FrontEnd
 	{
 		Thread,
 		Story
+	}
+
+	private class Cursor
+	{
+		public bool Visible { get; set; }
+		public ColumnType Column =>
+			!this.Visible
+				? default
+				: this._oneColumnVisible
+					? this._parent._displayThread
+						? ColumnType.Thread
+						: ColumnType.Story
+					: this._selectFromRightColumn
+						? ColumnType.Story
+						: ColumnType.Thread;
+		public int Index => !this.Visible ? -1 : this._index;
+		private int _index;
+		private bool _oneColumnVisible =>
+			this._parent._displayThread ^ this._parent._displayStory;
+		private bool _selectFromRightColumn;
+		private FrontEnd _parent;
+
+		public Cursor(FrontEnd parent) { this._parent = parent; }
+		public void Up()
+		{
+			if (!this.Visible)
+			{
+				this.Reset();
+				return;
+			}
+
+			var newIndex = Math.Max(this.Index - 1, 0);
+			this._index = newIndex;
+		}
+		public void Down()
+		{
+			if (!this.Visible)
+			{
+				this.Reset();
+				return;
+			}
+
+			var numElements = this._parent.GetCurrentElements().Count;
+			var newIndex = Math.Min(this.Index + 1, numElements - 1);
+			this._index = newIndex;
+		}
+		public void Left()
+		{
+			if (!this.Visible)
+			{
+				this.Reset();
+				return;
+			}
+
+			if (this._parent._displayThread
+				&& this._parent._displayStory
+				&& this._selectFromRightColumn)
+			{
+				this._selectFromRightColumn = false;
+				this._index = 0;
+			}
+		}
+		public void Right()
+		{
+			if (!this.Visible)
+			{
+				this.Reset();
+				return;
+			}
+
+			if (this._parent._displayThread
+				&& this._parent._displayStory
+				&& !this._selectFromRightColumn)
+			{
+				this._selectFromRightColumn = true;
+				this._index = 0;
+			}
+		}
+
+		public void Reset()
+		{
+			this.Visible = true;
+			this._index = 0;
+			this._selectFromRightColumn = false;
+		}
 	}
 }

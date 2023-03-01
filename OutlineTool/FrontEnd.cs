@@ -57,7 +57,7 @@ public class FrontEnd
 		switch (input.Key)
 		{
 			case ConsoleKey.D1:
-				this._cursor.Visible = false;
+				this._cursor.Reset(resetColumn: true);
 				if (this._currentStoryThread == this._story.Threads[0])
 				{
 					this._currentStoryThread = null;
@@ -67,7 +67,7 @@ public class FrontEnd
 				this._currentStoryThread = this._story.Threads[0];
 				break;
 			case ConsoleKey.D2:
-				this._cursor.Visible = false;
+				this._cursor.Reset(resetColumn: true);
 				if (this._currentStoryThread == this._story.Threads[1])
 				{
 					this._currentStoryThread = null;
@@ -77,24 +77,40 @@ public class FrontEnd
 				this._currentStoryThread = this._story.Threads[1];
 				break;
 			case ConsoleKey.D3:
-				this._cursor.Visible = false;
+				this._cursor.Reset(resetColumn: true);
 				this._displayStory = !this._displayStory;
 				break;
 
 			case ConsoleKey.DownArrow:
 			case ConsoleKey.J:
+				if (!this._displayThread && !this._displayStory)
+				{
+					return;
+				}
 			 	this._cursor.Down();
 				break;
 			case ConsoleKey.UpArrow:
 			case ConsoleKey.K:
+				if (!this._displayThread && !this._displayStory)
+				{
+					return;
+				}
 				this._cursor.Up();
 				break;
 			case ConsoleKey.RightArrow:
 			case ConsoleKey.L:
+				if (!this._displayThread && !this._displayStory)
+				{
+					return;
+				}
 				this._cursor.Right();
 				break;
 			case ConsoleKey.LeftArrow:
 			case ConsoleKey.H:
+				if (!this._displayThread && !this._displayStory)
+				{
+					return;
+				}
 				this._cursor.Left();
 				break;
 
@@ -130,7 +146,7 @@ public class FrontEnd
 				};
 
 				list.InsertNewElement(index, name!);
-				this._cursor.Visible = false;
+				this._cursor.Reset();
 				break;
 			case ConsoleKey.E:
 				if (this._selectingNewElement) { return; }
@@ -171,7 +187,7 @@ public class FrontEnd
 						.DeleteElement(this._cursor.Index);
 				}
 
-				this._cursor.Visible = false;
+				this._cursor.Reset();
 				break;
 
 			case ConsoleKey.Enter:
@@ -204,7 +220,7 @@ public class FrontEnd
 				}
 
 				this._selectedElement = null;
-				this._cursor.Visible = false;
+				this._cursor.Reset();
 				break;
 		}
 	}
@@ -358,7 +374,7 @@ public class FrontEnd
 
 	private class Cursor
 	{
-		public bool Visible { get; set; }
+		public bool Visible { get; private set; }
 		public ColumnType Column =>
 			!this.Visible
 				? default
@@ -379,22 +395,14 @@ public class FrontEnd
 		public Cursor(FrontEnd parent) { this._parent = parent; }
 		public void Up()
 		{
-			if (!this.Visible)
-			{
-				this.Reset();
-				return;
-			}
+			this.Visible = true;
 
 			var newIndex = Math.Max(this.Index - 1, 0);
 			this._index = newIndex;
 		}
 		public void Down()
 		{
-			if (!this.Visible)
-			{
-				this.Reset();
-				return;
-			}
+			this.Visible = true;
 
 			var numElements = this._parent.GetCurrentElements().Count;
 			var newIndex = Math.Min(this.Index + 1, numElements - 1);
@@ -402,11 +410,7 @@ public class FrontEnd
 		}
 		public void Left()
 		{
-			if (!this.Visible)
-			{
-				this.Reset();
-				return;
-			}
+			this.Visible = true;
 
 			if (this._parent._displayThread
 				&& this._parent._displayStory
@@ -418,11 +422,7 @@ public class FrontEnd
 		}
 		public void Right()
 		{
-			if (!this.Visible)
-			{
-				this.Reset();
-				return;
-			}
+			this.Visible = true;
 
 			if (this._parent._displayThread
 				&& this._parent._displayStory
@@ -433,11 +433,20 @@ public class FrontEnd
 			}
 		}
 
-		public void Reset()
+		public void Reset(bool resetColumn = false)
 		{
-			this.Visible = true;
-			this._index = 0;
-			this._selectFromRightColumn = false;
+			// set cursor invisible
+			this.Visible = false;
+			// reset to -1 so that the up/down logic above will correctly
+			// set index to 0 when they are first called
+			this._index = -1;
+			// it feels better to not mess with which column the cursor
+			// is on after doing CRUD operations on the list elements.
+			// But it also feels good to consistently set the cursor on
+			// the left when changing which columns are visible.
+			// Therefore we default to not changing, but optionally allow
+			// column position to be reset as well.
+			if (resetColumn) { this._selectFromRightColumn = false; }
 		}
 	}
 }

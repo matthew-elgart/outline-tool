@@ -34,8 +34,8 @@ public class Program
 			- chapters
 				* add chapter
 				* "drag" chapter around
-				+ delete chapter (with confirmation)
-				+ rename chapter
+				* delete chapter (with confirmation)
+				* rename chapter
 				- filter threads to display beats for? (stretch/not sure if worth)
 			* assign beat to chapter
 				* change "selecting new" to just be computed property
@@ -43,7 +43,8 @@ public class Program
 					- if it's valuable, could offer a warning when dragging beats in a thread, and then unassigning from chapter
 					- and when moving between chapters, could offer a warning and then auto update thread order
 			- toggle colors
-		- display errors better
+		- cleanup frontend state, consider moving everything to functions
+		- scrolling for rendering?
 		- make all those user actions look nice
 			- decide on how to highlight and stuff
 			- nano-esque "user input area" at the bottom?
@@ -52,7 +53,7 @@ public class Program
 		- consider updating render only when things are added
 			- may not need to bother with async at all
 			- can track previous console dimensions, and only render when they change (or on input)
-		- scrolling for rendering?
+		- display errors better (maybe not)
 	*/
 	private static async Task Main(string[] args)
 	{

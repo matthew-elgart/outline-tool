@@ -4,26 +4,6 @@ using System.Collections;
 public static class StoryUpdateService
 {
 	// TODO: remove. no references
-	public static void UpdateElementOrder<T>(
-		T element,
-		int index,
-		IList<T> elements)
-		where T : IOrderedElement
-	{
-		if (!elements.Contains(element))
-		{
-			throw new ArgumentException($"Element not found in the provided list; cannot update order for Element \"{element.Name}\"");
-		}
-		if (index < 0 || index >= elements.Count)
-		{
-			throw new IndexOutOfRangeException($"Index {index} out of range for updating element {element.Name}");
-		};
-
-		elements.Remove(element);
-		elements.Insert(index, element);
-		RefreshElementOrders(elements);
-	}
-
 	public static void DeleteElement<T>(
 		T element,
 		IList<T> elements)
@@ -77,6 +57,7 @@ public interface IOrderedElementList
 	Type GetElementType();
 	void InsertNewElement(int index, string name);
 	void UpdateElementOrder(IOrderedElement element, int index);
+	void DeleteElement(int index);
 	int Count { get; }
 	IOrderedElement this[int index] { get; }
 }
@@ -116,6 +97,34 @@ public class OrderedElementList<T> : List<T>, IOrderedElementList
 		this.Remove(tElement);
 		this.Insert(index, tElement);
 		RefreshElementOrders();
+	}
+
+	public void DeleteElement(int index)
+	{
+		if (index < 0 || index >= this.Count)
+		{
+			throw new IndexOutOfRangeException($"Index {index} out of range for deletion");
+		};
+
+		var element = this[index];
+
+		this.Remove(element);
+		RefreshElementOrders();
+
+		// storyBeats don't get removed from chapters for free; need
+		// to do that ourselves
+		if (element is StoryBeat storyBeat)
+		{
+			storyBeat.Chapter?.StoryBeats.Remove(storyBeat);
+		}
+		// similarly, chapters don't get removed from storyBeats for free
+		else if (element is Chapter chapter)
+		{
+			foreach (var chapterBeat in chapter.StoryBeats)
+			{
+				chapterBeat.Chapter = null;
+			}
+		}
 	}
 
 	IOrderedElement IOrderedElementList.this[int index] => this[index];

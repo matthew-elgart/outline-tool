@@ -24,6 +24,12 @@ public class FrontEnd
 			: this._selectFromRightColumn
 				? ColumnType.Story
 				: ColumnType.Thread;
+	private Dictionary<ColumnType, string> _columnTypeNames = new()
+	{
+		{ ColumnType.Thread, "story beat" },
+		{ ColumnType.Story, "chapter" },
+		//{ ColumnType.Threads, "story thread" }
+	};
 
 	private int? _selectedIndex;
 	private bool _selectFromRightColumn;
@@ -145,15 +151,16 @@ public class FrontEnd
 				if (this._selectingNewElement) { return; }
 				if (this._selectedIndex == null) { return; }
 
-				var isThread = this._currentlySelectedColumnType
-					== ColumnType.Thread;
+				var thingToAdd = this._columnTypeNames
+					[this._currentlySelectedColumnType!.Value];
 
-				var name = GetNewElementName(isThread);
+			 	Console.SetCursorPosition(0, 20);
+				Console.Write($"New {thingToAdd} name?");
+				Console.SetCursorPosition(0, 21);
+				var name = Console.ReadLine();
 				if (name == string.Empty) { return; }
 
-				IOrderedElementList list = isThread
-					? this._currentStoryBeats!
-					: this._story.Chapters;
+				var list = this.GetCurrentElements();
 
 				var append = input.Key == ConsoleKey.A;
 				var shift = input.Modifiers == ConsoleModifiers.Shift;
@@ -170,34 +177,33 @@ public class FrontEnd
 					(true, true) => list.Count
 				};
 
-				list.InsertNewElement(index, name);
+				list.InsertNewElement(index, name!);
+				this._selectedIndex = null;
 				break;
 			case ConsoleKey.E:
-				if (!this._displayThread) { return; }
 				if (this._selectingNewElement) { return; }
 				if (this._selectedIndex == null) { return; }
 
+				var thingToEdit = this._columnTypeNames
+					[this._currentlySelectedColumnType!.Value];
+
 			 	Console.SetCursorPosition(0, 20);
-				Console.Write("New story beat name?");
+				Console.Write($"New {thingToEdit} name?");
 				Console.SetCursorPosition(0, 21);
 				var newName = Console.ReadLine();
 				if (newName == string.Empty) { return; }
 
-				var storyBeat = this._currentStoryBeats!
+				var element = this.GetCurrentElements()
 					[this._selectedIndex.Value];
-				storyBeat.Name = newName!;
+				element.Name = newName!;
 				break;
 			case ConsoleKey.D:
-				if (!this._displayThread) { return; }
 				if (this._selectingNewElement) { return; }
 				if (this._selectedIndex == null) { return; }
 
 				var confirmation = string.Empty;
-				var isThread2 =
-					this._currentlySelectedColumnType == ColumnType.Thread;
-				var thingToDelete = isThread2
-					? "story beat"
-					: "chapter";
+				var thingToDelete = this._columnTypeNames
+					[this._currentlySelectedColumnType!.Value];
 				do
 				{
 					Console.SetCursorPosition(0, 20);
@@ -209,10 +215,8 @@ public class FrontEnd
 
 				if (confirmation == "y")
 				{
-					StoryUpdateService.DeleteElement(
-						this._currentStoryBeats!
-							[this._selectedIndex!.Value],
-						this._currentStoryBeats!);
+					this.GetCurrentElements()
+						.DeleteElement(this._selectedIndex!.Value);
 				}
 
 				this._selectedIndex = null;
@@ -382,18 +386,6 @@ public class FrontEnd
 			//: threadRenderer;
 
 		return (threadRenderer, storyRenderer);
-	}
-
-	private static string GetNewElementName(bool isThread)
-	{
-		var thingToAdd = isThread
-			? "story beat"
-			: "chapter";
-
-		Console.SetCursorPosition(0, 20);
-		Console.Write($"New {thingToAdd} name?");
-		Console.SetCursorPosition(0, 21);
-		return Console.ReadLine()!;
 	}
 
 	// returns the list of elements that correspond to the cursor's current location

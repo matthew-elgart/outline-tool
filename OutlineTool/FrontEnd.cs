@@ -9,21 +9,11 @@ public class FrontEnd
 	private const int Padding = 6;
 
 	private Story _story;
-	private StoryThread? _currentStoryThread;
-	private bool _displayLeftColumn;
-	private bool _displayChapters;
-	private ColumnType[] _activeColumns => new ColumnType?[]
-	{
-		this._displayLeftColumn
-			? this._currentStoryThread != null
-				? ColumnType.Beats
-				: ColumnType.Threads
-			: null,
-		this._displayChapters ? ColumnType.Chapters : null	
-	}
-		.Where(ct => ct != null)
-		.Select(ct => ct!.Value)
-		.ToArray();
+	private Display _display = new();
+	// could be computed on every access - but since it's a couple
+	// layers of checks, keeping this field as a "cache" and updating it
+	// when the columns change
+	private ColumnType[] _activeColumns = new ColumnType[0];
 	private Dictionary<ColumnType, string> _columnTypeNames = new()
 	{
 		{ ColumnType.Beats, "story beat" },
@@ -50,22 +40,21 @@ public class FrontEnd
 
 	public void Render()
 	{
-		var activeColumns = this._activeColumns;
 		var renderers =
-			this.GetConfiguredRenderers(activeColumns.Length);
-		if (activeColumns.Length != renderers.Length)
+			this.GetConfiguredRenderers(this._activeColumns.Length);
+		if (this._activeColumns.Length != renderers.Length)
 		{
-			throw new InvalidOperationException($"Number of columns ({activeColumns.Length}) was different from the number of renderers ({renderers.Length})");
+			throw new InvalidOperationException($"Number of columns ({this._activeColumns.Length}) was different from the number of renderers ({renderers.Length})");
 		}
 
-		for (var i = 0; i < activeColumns.Length; i++)
+		for (var i = 0; i < this._activeColumns.Length; i++)
 		{
 			var renderer = renderers[i];
-			switch (activeColumns[i])
+			switch (this._activeColumns[i])
 			{
 				case ColumnType.Beats:
 					this.RenderStoryBeats(
-						this._currentStoryThread!,
+						this._display.CurrentStoryThread!,
 						renderer);
 					break;
 				case ColumnType.Chapters:
@@ -86,32 +75,29 @@ public class FrontEnd
 		{
 			case ConsoleKey.D1:
 				this._cursor.Reset(resetColumn: true);
-				if (this._currentStoryThread == this._story.Threads[0])
-				{
-					this._currentStoryThread = null;
-					return;
-				}
-
-				this._currentStoryThread = this._story.Threads[0];
+				this._display
+					.SetCurrentStoryThread(this._story.Threads[0]);
+				this._activeColumns =
+					this._display.CalculateActiveColumns();
 				break;
 			case ConsoleKey.D2:
 				this._cursor.Reset(resetColumn: true);
-				if (this._currentStoryThread == this._story.Threads[1])
-				{
-					this._currentStoryThread = null;
-					return;
-				}
-
-				this._currentStoryThread = this._story.Threads[1];
+				this._display
+					.SetCurrentStoryThread(this._story.Threads[1]);
+				this._activeColumns =
+					this._display.CalculateActiveColumns();
 				break;
 			case ConsoleKey.D3:
 				this._cursor.Reset(resetColumn: true);
-				this._displayChapters = !this._displayChapters;
+				this._display.ToggleRightColumn();
+				this._activeColumns =
+					this._display.CalculateActiveColumns();
 				break;
 			case ConsoleKey.D4:
 				this._cursor.Reset(resetColumn: true);
-				this._displayLeftColumn = !this._displayLeftColumn;
-				this._currentStoryThread = null;
+				this._display.ToggleLeftColumn();
+				this._activeColumns =
+					this._display.CalculateActiveColumns();
 				break;
 
 			case ConsoleKey.DownArrow:
@@ -258,7 +244,8 @@ public class FrontEnd
 				else if (selection.Column == ColumnType.Beats
 					&& this._cursor.Column == ColumnType.Chapters)
 				{
-					var storyBeat = this._currentStoryThread!
+					var storyBeat = this._display
+						.CurrentStoryThread!
 						.StoryBeats[selection.Index];
 					StoryUpdateService.AssignStoryBeatToChapter(
 						storyBeat,
@@ -398,7 +385,9 @@ public class FrontEnd
 
 		IOrderedElementList? result = this._cursor.Column switch
 		{
-			ColumnType.Beats => this._currentStoryThread?.StoryBeats,
+			ColumnType.Beats => this._display
+				.CurrentStoryThread!
+				.StoryBeats,
 			ColumnType.Chapters => this._story.Chapters,
 			ColumnType.Threads => this._story.Threads,
 			_ => throw new ArgumentOutOfRangeException(nameof(this._cursor.Column))
@@ -438,6 +427,7 @@ public class FrontEnd
 		private FrontEnd _parent;
 
 		public Cursor(FrontEnd parent) { this._parent = parent; }
+
 		public void Up()
 		{
 			this.Visible = true;
@@ -445,6 +435,7 @@ public class FrontEnd
 			var newIndex = Math.Max(this.Index - 1, 0);
 			this._index = newIndex;
 		}
+
 		public void Down()
 		{
 			this.Visible = true;
@@ -453,6 +444,7 @@ public class FrontEnd
 			var newIndex = Math.Min(this.Index + 1, numElements - 1);
 			this._index = newIndex;
 		}
+
 		public void Left()
 		{
 			var switchedColumns = false;
@@ -470,6 +462,7 @@ public class FrontEnd
 
 			this.Visible = true;
 		}
+
 		public void Right()
 		{
 			var switchedColumns = false;
@@ -505,5 +498,40 @@ public class FrontEnd
 			// column position to be reset as well.
 			if (resetColumn) { this._selectFromRightColumn = false; }
 		}
+	}
+
+	private class Display
+	{
+		public StoryThread? CurrentStoryThread { get; private set; }
+		private bool _displayLeftColumn;
+		private bool _displayChapters;
+
+		public void ToggleLeftColumn()
+		{
+			this._displayLeftColumn = !this._displayLeftColumn;
+			this.CurrentStoryThread = null;
+		}
+
+		public void SetCurrentStoryThread(StoryThread storyThread)
+		{
+			this._displayLeftColumn = true;
+			this.CurrentStoryThread = storyThread;
+		}
+
+		public void ToggleRightColumn() =>
+			this._displayChapters = !this._displayChapters;
+
+		public ColumnType[] CalculateActiveColumns() => new ColumnType?[]
+			{
+				this._displayLeftColumn
+					? this.CurrentStoryThread != null
+						? ColumnType.Beats
+						: ColumnType.Threads
+					: null,
+				this._displayChapters ? ColumnType.Chapters : null
+			}
+			.Where(ct => ct != null)
+			.Select(ct => ct!.Value)
+			.ToArray();
 	}
 }

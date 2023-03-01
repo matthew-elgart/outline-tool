@@ -47,7 +47,7 @@ public class Program
 			- toggle colors
 		- cleanup frontend state, consider moving everything to functions
 			* factor out cursor state
-			- factor out state for displayed stuff?
+			* factor out state for displayed stuff?
 		* GetConfiguredRenderers can't be the best way to do that lol
 		- scrolling for rendering?
 		- make all those user actions look nice

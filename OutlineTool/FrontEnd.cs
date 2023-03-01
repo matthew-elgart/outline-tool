@@ -10,8 +10,6 @@ public class FrontEnd
 
 	private Story _story;
 	private StoryThread? _currentStoryThread;
-	private OrderedElementList<StoryBeat>? _currentStoryBeats =>
-		this._currentStoryThread?.StoryBeats;
 	private bool _displayThread => this._currentStoryThread != null;
 	private bool _displayStory;
 	private bool _oneColumnVisible =>
@@ -33,8 +31,8 @@ public class FrontEnd
 
 	private int? _selectedIndex;
 	private bool _selectFromRightColumn;
-	private bool _selectingNewElement => this._selectedElement != null;
 	private IOrderedElement? _selectedElement;
+	private bool _selectingNewElement => this._selectedElement != null;
 
 	private TextRenderer _threadRenderer = new();
 	private TextRenderer _storyRenderer = new();
@@ -103,9 +101,7 @@ public class FrontEnd
 					return;
 				}
 
-				var numItems = currentColumn == ColumnType.Thread
-					? this._currentStoryBeats!.Count
-					: this._story.Chapters.Count;
+				var numItems = this.GetCurrentElements().Count;
 				var newDownIndex = Math.Min(
 					this._selectedIndex!.Value + 1,
 					numItems - 1);
@@ -125,7 +121,11 @@ public class FrontEnd
 				break;
 			case ConsoleKey.RightArrow:
 			case ConsoleKey.L:
-				if (this._selectedIndex == null) { return; }
+				if (this._selectedIndex == null)
+				{
+					this._selectedIndex = 0;
+					return;
+				}
 				if (this._displayThread
 					&& this._displayStory
 					&& !this._selectFromRightColumn)
@@ -136,7 +136,11 @@ public class FrontEnd
 				break;
 			case ConsoleKey.LeftArrow:
 			case ConsoleKey.H:
-				if (this._selectedIndex == null) { return; }
+				if (this._selectedIndex == null)
+				{
+					this._selectedIndex = 0;
+					return;
+				}
 				if (this._displayThread
 					&& this._displayStory
 					&& this._selectFromRightColumn)
@@ -256,7 +260,6 @@ public class FrontEnd
 							.Value]);
 				}
 
-				this._selectFromRightColumn = false;
 				this._selectedElement = null;
 				this._selectedIndex = null;
 				break;
@@ -396,7 +399,7 @@ public class FrontEnd
 
 		IOrderedElementList? result = columnType.Value switch
 		{
-			ColumnType.Thread => this._currentStoryBeats,
+			ColumnType.Thread => this._currentStoryThread?.StoryBeats,
 			ColumnType.Story => this._story.Chapters,
 			_ => throw new ArgumentOutOfRangeException(nameof(columnType))
 		};

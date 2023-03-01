@@ -22,11 +22,13 @@ public static class StoryInfoProvider
 		var thread1 = new StoryThread
 		{
 			Name = "Eddie improves at cooking",
+			Order = 0,
 			TextColor = ConsoleColor.Red
 		};
 		var thread2 = new StoryThread
 		{
 			Name = "Eddie's relationship with his dad",
+			Order = 1,
 			TextColor = ConsoleColor.DarkGreen,
 		};
 

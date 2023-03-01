@@ -10,13 +10,25 @@ public class FrontEnd
 
 	private Story _story;
 	private StoryThread? _currentStoryThread;
-	private bool _displayThread => this._currentStoryThread != null;
-	private bool _displayStory;
+	private bool _displayLeftColumn;
+	private bool _displayChapters;
+	private ColumnType[] _activeColumns => new ColumnType?[]
+	{
+		this._displayLeftColumn
+			? this._currentStoryThread != null
+				? ColumnType.Beats
+				: ColumnType.Threads
+			: null,
+		this._displayChapters ? ColumnType.Chapters : null	
+	}
+		.Where(ct => ct != null)
+		.Select(ct => ct!.Value)
+		.ToArray();
 	private Dictionary<ColumnType, string> _columnTypeNames = new()
 	{
-		{ ColumnType.Thread, "story beat" },
-		{ ColumnType.Story, "chapter" },
-		//{ ColumnType.Threads, "story thread" }
+		{ ColumnType.Beats, "story beat" },
+		{ ColumnType.Chapters, "chapter" },
+		{ ColumnType.Threads, "story thread" }
 	};
 
 	private Cursor _cursor;
@@ -34,18 +46,24 @@ public class FrontEnd
 
 	public void Render()
 	{
-		var (threadRenderer, storyRenderer) = this.GetConfiguredRenderers();
+		var activeColumns = this._activeColumns;
+		var (threadRenderer, storyRenderer) =
+			this.GetConfiguredRenderers(activeColumns.Length);
 
-		if (this._displayStory)
+		if (activeColumns.Contains(ColumnType.Threads))
 		{
-			RenderStory(this._story, this._storyRenderer);
+			RenderStoryThreads(this._story, this._threadRenderer);
 		}
-
-		if (this._displayThread)
+		else if (activeColumns.Contains(ColumnType.Beats))
 		{
-			this.RenderStoryThread(
+			this.RenderStoryBeats(
 				this._currentStoryThread!,
 				this._threadRenderer);
+		}
+
+		if (activeColumns.Contains(ColumnType.Chapters))
+		{
+			RenderChapters(this._story, this._storyRenderer);
 		}
 
 		threadRenderer?.RenderFrame();
@@ -78,12 +96,17 @@ public class FrontEnd
 				break;
 			case ConsoleKey.D3:
 				this._cursor.Reset(resetColumn: true);
-				this._displayStory = !this._displayStory;
+				this._displayChapters = !this._displayChapters;
+				break;
+			case ConsoleKey.D4:
+				this._cursor.Reset(resetColumn: true);
+				this._displayLeftColumn = !this._displayLeftColumn;
+				this._currentStoryThread = null;
 				break;
 
 			case ConsoleKey.DownArrow:
 			case ConsoleKey.J:
-				if (!this._displayThread && !this._displayStory)
+				if (this._activeColumns.Length == 0)
 				{
 					return;
 				}
@@ -91,7 +114,7 @@ public class FrontEnd
 				break;
 			case ConsoleKey.UpArrow:
 			case ConsoleKey.K:
-				if (!this._displayThread && !this._displayStory)
+				if (this._activeColumns.Length == 0)
 				{
 					return;
 				}
@@ -99,7 +122,7 @@ public class FrontEnd
 				break;
 			case ConsoleKey.RightArrow:
 			case ConsoleKey.L:
-				if (!this._displayThread && !this._displayStory)
+				if (this._activeColumns.Length == 0)
 				{
 					return;
 				}
@@ -107,7 +130,7 @@ public class FrontEnd
 				break;
 			case ConsoleKey.LeftArrow:
 			case ConsoleKey.H:
-				if (!this._displayThread && !this._displayStory)
+				if (this._activeColumns.Length == 0)
 				{
 					return;
 				}
@@ -133,17 +156,20 @@ public class FrontEnd
 				var append = input.Key == ConsoleKey.A;
 				var shift = input.Modifiers == ConsoleModifiers.Shift;
 
-				var index = (append, shift) switch
-				{
-					// lowercase i
-					(false, false) => this._cursor.Index,
-					// lowercase a
-					(true, false) => this._cursor.Index + 1,
-					// uppercase I
-					(false, true) => 0,
-					// uppercase A
-					(true, true) => list.Count
-				};
+				var index = list.Count == 0
+					// always insert to 0 when list is empty
+					? 0
+					: (append, shift) switch
+					{
+						// lowercase i
+						(false, false) => this._cursor.Index,
+						// lowercase a
+						(true, false) => this._cursor.Index + 1,
+						// uppercase I
+						(false, true) => 0,
+						// uppercase A
+						(true, true) => list.Count
+					};
 
 				list.InsertNewElement(index, name!);
 				this._cursor.Reset();
@@ -151,6 +177,9 @@ public class FrontEnd
 			case ConsoleKey.E:
 				if (this._selectingNewElement) { return; }
 				if (!this._cursor.Visible) { return; }
+
+				var editElements = this.GetCurrentElements();
+				if (editElements.Count == 0) { return; }
 
 				var thingToEdit = this._columnTypeNames
 					[this._cursor.Column];
@@ -161,13 +190,15 @@ public class FrontEnd
 				var newName = Console.ReadLine();
 				if (newName == string.Empty) { return; }
 
-				var element = this.GetCurrentElements()
-					[this._cursor.Index];
+				var element = editElements[this._cursor.Index];
 				element.Name = newName!;
 				break;
 			case ConsoleKey.D:
 				if (this._selectingNewElement) { return; }
 				if (!this._cursor.Visible) { return; }
+
+				var deleteElements = this.GetCurrentElements();
+				if (deleteElements.Count == 0) { return; }
 
 				var confirmation = string.Empty;
 				var thingToDelete = this._columnTypeNames
@@ -183,8 +214,7 @@ public class FrontEnd
 
 				if (confirmation == "y")
 				{
-					this.GetCurrentElements()
-						.DeleteElement(this._cursor.Index);
+					deleteElements.DeleteElement(this._cursor.Index);
 				}
 
 				this._cursor.Reset();
@@ -192,6 +222,9 @@ public class FrontEnd
 
 			case ConsoleKey.Enter:
 				if (!this._cursor.Visible) { return; }
+
+				var elements = this.GetCurrentElements();
+				if (elements.Count == 0) { return; }
 
 				// if nothing is selected, then select where cursor is
 				if (!this._selectingNewElement)
@@ -201,7 +234,6 @@ public class FrontEnd
 				}
 
 				var selection = this._selection!.Value;
-				var elements = this.GetCurrentElements();
 
 				// if user has selected two elements in the same list,
 				//then they are "dragging" them into a new order
@@ -213,8 +245,8 @@ public class FrontEnd
 				}
 				// special case: user selected a story beat and "dragged"
 				// it to the story column to assign it to a chapter
-				else if (selection.Column == ColumnType.Thread
-					&& this._cursor.Column == ColumnType.Story)
+				else if (selection.Column == ColumnType.Beats
+					&& this._cursor.Column == ColumnType.Chapters)
 				{
 					var storyBeat = this._currentStoryThread!
 						.StoryBeats[selection.Index];
@@ -229,7 +261,33 @@ public class FrontEnd
 		}
 	}
 
-	private void RenderStoryThread(
+	private void RenderStoryThreads(Story story, TextRenderer renderer)
+	{
+		renderer.Print(story.Name);
+		renderer.Print(new string('-', story.Name.Length));
+
+		foreach (var storyThread in story.Threads)
+		{
+			var stringToPrint = storyThread.Name;
+			var highlightText =
+				this._cursor.Column == ColumnType.Threads
+				&& storyThread.Order == this._cursor.Index;
+
+			renderer.Print();
+			renderer.Print(
+				stringToPrint,
+				indentation: 2,
+				color: storyThread.TextColor,
+				highlighted: highlightText);
+			renderer.Print(
+				new string('-', stringToPrint.Length),
+				indentation: 2,
+				color: storyThread.TextColor,
+				highlighted: highlightText);
+		}
+	}
+
+	private void RenderStoryBeats(
 		StoryThread thread,
 		TextRenderer renderer)
 	{
@@ -241,7 +299,7 @@ public class FrontEnd
 		foreach (var beat in thread.StoryBeats)
 		{
 			var highlightText =
-				this._cursor.Column == ColumnType.Thread
+				this._cursor.Column == ColumnType.Beats
 				&& beat.Order == this._cursor.Index;
 
 			renderer.Print();
@@ -252,7 +310,7 @@ public class FrontEnd
 		}
 	}
 
-	private void RenderStory(Story story, TextRenderer renderer)
+	private void RenderChapters(Story story, TextRenderer renderer)
 	{
 		renderer.Print(story.Name);
 		renderer.Print(new string('-', story.Name.Length));
@@ -261,7 +319,7 @@ public class FrontEnd
 		{
 			var stringToPrint = $"{chapter.Order + 1}. {chapter.Name}";
 			var highlightText =
-				this._cursor.Column == ColumnType.Story
+				this._cursor.Column == ColumnType.Chapters
 				&& chapter.Order == this._cursor.Index;
 
 			renderer.Print();
@@ -287,9 +345,10 @@ public class FrontEnd
 		}
 	}
 
-	private (TextRenderer?, TextRenderer?) GetConfiguredRenderers()
+	private (TextRenderer?, TextRenderer?) GetConfiguredRenderers(
+		int numColumns)
 	{
-		if (this._currentStoryThread == null && !this._displayStory)
+		if (numColumns == 0)
 		{
 			return (null, null);
 		}
@@ -299,7 +358,7 @@ public class FrontEnd
 		//TextRenderer? threadRenderer = null;
 		//TextRenderer? storyRenderer = null;
 
-		if (this._displayThread && this._displayStory)
+		if (numColumns == 2)
 		{
 			var renderWidth = Console.WindowWidth / 2;
 			threadRenderer = this._threadRenderer;
@@ -319,7 +378,7 @@ public class FrontEnd
 			return (threadRenderer, storyRenderer);
 		}
 
-		if (this._displayThread)
+		if (!this._displayChapters)
 		{
 			threadRenderer.Reset(
 				xPosition: 0,
@@ -361,8 +420,9 @@ public class FrontEnd
 
 		IOrderedElementList? result = this._cursor.Column switch
 		{
-			ColumnType.Thread => this._currentStoryThread?.StoryBeats,
-			ColumnType.Story => this._story.Chapters,
+			ColumnType.Beats => this._currentStoryThread?.StoryBeats,
+			ColumnType.Chapters => this._story.Chapters,
+			ColumnType.Threads => this._story.Threads,
 			_ => throw new ArgumentOutOfRangeException(nameof(this._cursor.Column))
 		};
 
@@ -372,27 +432,30 @@ public class FrontEnd
 
 	private enum ColumnType
 	{
-		Thread,
-		Story
+		Beats,
+		Chapters,
+		Threads
 	}
 
 	private class Cursor
 	{
 		public bool Visible { get; private set; }
-		public ColumnType Column =>
-			!this.Visible
-				? default
-				: this._oneColumnVisible
-					? this._parent._displayThread
-						? ColumnType.Thread
-						: ColumnType.Story
-					: this._selectFromRightColumn
-						? ColumnType.Story
-						: ColumnType.Thread;
+		public ColumnType Column { get
+		{
+			if (!this.Visible) { return default; }
+			var activeColumns = this._parent._activeColumns;
+			return activeColumns.Length switch
+			{
+				0 => default,
+				1 => activeColumns.Single(),
+				2 => this._selectFromRightColumn
+					? activeColumns[1]
+					: activeColumns[0],
+				_ => throw new InvalidOperationException($"There should be maximum 2 active columns, but got {activeColumns.Length}")
+			};
+		}}
 		public int Index => !this.Visible ? -1 : this._index;
 		private int _index;
-		private bool _oneColumnVisible =>
-			this._parent._displayThread ^ this._parent._displayStory;
 		private bool _selectFromRightColumn;
 		private FrontEnd _parent;
 
@@ -414,33 +477,45 @@ public class FrontEnd
 		}
 		public void Left()
 		{
-			this.Visible = true;
-			this._index = 0;
-
-			if (this._parent._displayThread
-				&& this._parent._displayStory
+			var switchedColumns = false;
+			if (this._parent._activeColumns.Length == 2
 				&& this._selectFromRightColumn)
 			{
 				this._selectFromRightColumn = false;
+				switchedColumns = true;
 			}
+
+			// if the cursor was already visible and we didn't switch
+			// columns, then we should leave it where it is;
+			// otherwise we set it to the top
+			if (!this.Visible || switchedColumns) { this._index = 0; }
+
+			this.Visible = true;
 		}
 		public void Right()
 		{
-			this.Visible = true;
-			this._index = 0;
-
-			if (this._parent._displayThread
-				&& this._parent._displayStory
+			var switchedColumns = false;
+			if (this._parent._activeColumns.Length == 2
 				&& !this._selectFromRightColumn)
 			{
 				this._selectFromRightColumn = true;
+				switchedColumns = true;
 			}
+
+			// if the cursor was already visible and we didn't switch
+			// columns, then we should leave it where it is;
+			// otherwise we set it to the top
+			if (!this.Visible || switchedColumns) { this._index = 0; }
+
+			this.Visible = true;
 		}
 
 		public void Reset(bool resetColumn = false)
 		{
 			// set cursor invisible
 			this.Visible = false;
+			// selection should be cleared whenever we reset cursor
+			this._parent._selection = null;
 			// reset to -1 so that the up/down logic above will correctly
 			// set index to 0 when they are first called
 			this._index = -1;

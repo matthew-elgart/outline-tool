@@ -5,5 +5,5 @@ public class Story
 	// associated to Chapter.Order
 	public OrderedElementList<Chapter> Chapters { get; set; } = null!;
 
-	public List<StoryThread> Threads { get; set; } = null!;
+	public OrderedElementList<StoryThread> Threads { get; set; } = null!;
 }

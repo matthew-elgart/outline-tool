@@ -35,8 +35,12 @@ public class FrontEnd
 	private (ColumnType Column, int Index)? _selection;
 	private bool _selectingNewElement => this._selection != null;
 
-	private TextRenderer _threadRenderer = new();
-	private TextRenderer _storyRenderer = new();
+	// arguably we don't need these, since we configure the renderers
+	// anew each cycle (so we could instead *create* and configure them).
+	// But I liked the idea of not needing to constantly allocate and
+	// deallocate renderers, so I'm keeping them around
+	private TextRenderer _leftRenderer = new();
+	private TextRenderer _rightRenderer = new();
 
 	public FrontEnd(Story story)
 	{
@@ -47,27 +51,33 @@ public class FrontEnd
 	public void Render()
 	{
 		var activeColumns = this._activeColumns;
-		var (threadRenderer, storyRenderer) =
+		var renderers =
 			this.GetConfiguredRenderers(activeColumns.Length);
-
-		if (activeColumns.Contains(ColumnType.Threads))
+		if (activeColumns.Length != renderers.Length)
 		{
-			RenderStoryThreads(this._story, this._threadRenderer);
-		}
-		else if (activeColumns.Contains(ColumnType.Beats))
-		{
-			this.RenderStoryBeats(
-				this._currentStoryThread!,
-				this._threadRenderer);
+			throw new InvalidOperationException($"Number of columns ({activeColumns.Length}) was different from the number of renderers ({renderers.Length})");
 		}
 
-		if (activeColumns.Contains(ColumnType.Chapters))
+		for (var i = 0; i < activeColumns.Length; i++)
 		{
-			RenderChapters(this._story, this._storyRenderer);
-		}
+			var renderer = renderers[i];
+			switch (activeColumns[i])
+			{
+				case ColumnType.Beats:
+					this.RenderStoryBeats(
+						this._currentStoryThread!,
+						renderer);
+					break;
+				case ColumnType.Chapters:
+					this.RenderChapters(this._story, renderer);
+					break;
+				case ColumnType.Threads:
+					this.RenderStoryThreads(this._story, renderer);
+					break;
+			}
 
-		threadRenderer?.RenderFrame();
-		storyRenderer?.RenderFrame();
+			renderer.RenderFrame();
+		}
 	}
 
 	public void HandleInput(ConsoleKeyInfo input)
@@ -345,72 +355,40 @@ public class FrontEnd
 		}
 	}
 
-	private (TextRenderer?, TextRenderer?) GetConfiguredRenderers(
+	private TextRenderer[] GetConfiguredRenderers(
 		int numColumns)
 	{
 		if (numColumns == 0)
 		{
-			return (null, null);
+			return new TextRenderer[0];
 		}
-
-		var threadRenderer = this._threadRenderer;
-		var storyRenderer = this._storyRenderer;
-		//TextRenderer? threadRenderer = null;
-		//TextRenderer? storyRenderer = null;
 
 		if (numColumns == 2)
 		{
 			var renderWidth = Console.WindowWidth / 2;
-			threadRenderer = this._threadRenderer;
-			storyRenderer = this._storyRenderer;
 
-			threadRenderer.Reset(
+			this._leftRenderer.Reset(
 				xPosition: 0,
 				yPosition: 2,
 				width: renderWidth,
 				height: Console.WindowHeight - Padding);
-			storyRenderer.Reset(
+			this._rightRenderer.Reset(
 				xPosition: renderWidth,
 				yPosition: 2,
 				width: renderWidth,
 				height: Console.WindowHeight - Padding);
 
-			return (threadRenderer, storyRenderer);
+			return new[] { this._leftRenderer, this._rightRenderer };
 		}
 
-		if (!this._displayChapters)
-		{
-			threadRenderer.Reset(
-				xPosition: 0,
-				yPosition: 2,
-				width: Console.WindowWidth,
-				height: Console.WindowHeight - Padding);
-			storyRenderer = null;
-		}
-		else
-		{
-			storyRenderer.Reset(
-				xPosition: 0,
-				yPosition: 2,
-				width: Console.WindowWidth,
-				height: Console.WindowHeight - Padding);
-			threadRenderer = null;
-		}
+		// arbitrarily choose the left as the one to use when only one column
+		this._leftRenderer.Reset(
+			xPosition: 0,
+			yPosition: 2,
+			width: Console.WindowWidth,
+			height: Console.WindowHeight - Padding);
 
-		//var rendererToDisplay = this._displayThread
-			//? threadRenderer
-			//: storyRenderer;
-		//rendererToDisplay.Reset(
-			//xPosition: 0,
-			//yPosition: 2,
-			//width: Console.WindowWidth,
-			//height: Console.WindowHeight - 6);
-
-		//var rendererToHide = this._displayThread
-			//? storyRenderer
-			//: threadRenderer;
-
-		return (threadRenderer, storyRenderer);
+		return new[] { this._leftRenderer };
 	}
 
 	// returns the list of elements that correspond to the cursor's current location

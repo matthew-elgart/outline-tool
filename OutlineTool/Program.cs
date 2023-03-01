@@ -28,8 +28,9 @@ public class Program
 				* "drag" beat within thread
 				* rename thread
 				* delete beat (with confirmation)
-				- add a new thread
+				* add a new thread
 					- specify color
+				* "drag" threads around
 				- switch between threads to view
 				- delete thread (with confirmation)
 			- chapters
@@ -47,7 +48,7 @@ public class Program
 		- cleanup frontend state, consider moving everything to functions
 			* factor out cursor state
 			- factor out state for displayed stuff?
-		- GetConfiguredRenderers can't be the best way to do that lol
+		* GetConfiguredRenderers can't be the best way to do that lol
 		- scrolling for rendering?
 		- make all those user actions look nice
 			- decide on how to highlight and stuff

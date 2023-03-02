@@ -38,66 +38,59 @@ public partial class FrontEnd
 		this._cursor = new(this);
 	}
 
-	public void Render()
-	{
-		var renderers =
-			this.GetConfiguredRenderers(this._activeColumns.Length);
-		if (this._activeColumns.Length != renderers.Length)
-		{
-			throw new InvalidOperationException($"Number of columns ({this._activeColumns.Length}) was different from the number of renderers ({renderers.Length})");
-		}
-
-		for (var i = 0; i < this._activeColumns.Length; i++)
-		{
-			var renderer = renderers[i];
-			switch (this._activeColumns[i])
-			{
-				case ColumnType.Beats:
-					this.RenderStoryBeats(
-						this._display.CurrentStoryThread!,
-						renderer);
-					break;
-				case ColumnType.Chapters:
-					this.RenderChapters(this._story, renderer);
-					break;
-				case ColumnType.Threads:
-					this.RenderStoryThreads(this._story, renderer);
-					break;
-			}
-
-			renderer.RenderFrame();
-		}
-	}
-
 	public void HandleInput(ConsoleKeyInfo input)
 	{
 		switch (input.Key)
 		{
 			case ConsoleKey.D1:
 				this._cursor.Reset(resetColumn: true);
-				this._display
-					.SetCurrentStoryThread(this._story.Threads[0]);
+				this._display.ToggleLeftColumn();
 				this._activeColumns =
 					this._display.CalculateActiveColumns();
 				break;
 			case ConsoleKey.D2:
 				this._cursor.Reset(resetColumn: true);
-				this._display
-					.SetCurrentStoryThread(this._story.Threads[1]);
-				this._activeColumns =
-					this._display.CalculateActiveColumns();
-				break;
-			case ConsoleKey.D3:
-				this._cursor.Reset(resetColumn: true);
 				this._display.ToggleRightColumn();
 				this._activeColumns =
 					this._display.CalculateActiveColumns();
 				break;
-			case ConsoleKey.D4:
-				this._cursor.Reset(resetColumn: true);
-				this._display.ToggleLeftColumn();
+			case ConsoleKey.C
+			when input.Modifiers != ConsoleModifiers.Shift:
+				if (!this._cursor.Visible) { return; }
+				if (this._cursor.Column != ColumnType.Threads) { return; }
+
+				var clickElements = this.GetCurrentElements();
+				if (clickElements.Count == 0) { return; }
+
+				this._display.SetCurrentStoryThread(
+					this._story.Threads[this._cursor.Index]);
 				this._activeColumns =
 					this._display.CalculateActiveColumns();
+				this._cursor.Reset();
+				break;
+			case ConsoleKey.C
+			when input.Modifiers == ConsoleModifiers.Shift:
+				if (!this._activeColumns.Contains(ColumnType.Beats))
+				{
+					return;
+				}
+
+				this._display.SetCurrentStoryThread(null);
+				this._activeColumns =
+					this._display.CalculateActiveColumns();
+				this._cursor.Reset();
+				break;
+			case ConsoleKey.N:
+				if (!this._activeColumns.Contains(ColumnType.Beats))
+				{
+					return;
+				}
+
+				var nextIndex = Math.Min(this._display.CurrentStoryThread!.Order, this._story.Threads.Count);
+				this._display.SetCurrentStoryThread(null);
+				this._activeColumns =
+					this._display.CalculateActiveColumns();
+				this._cursor.Reset();
 				break;
 
 			case ConsoleKey.DownArrow:
@@ -279,6 +272,37 @@ public partial class FrontEnd
 	}
 
 #region rendering
+	public void Render()
+	{
+		var renderers =
+			this.GetConfiguredRenderers(this._activeColumns.Length);
+		if (this._activeColumns.Length != renderers.Length)
+		{
+			throw new InvalidOperationException($"Number of columns ({this._activeColumns.Length}) was different from the number of renderers ({renderers.Length})");
+		}
+
+		for (var i = 0; i < this._activeColumns.Length; i++)
+		{
+			var renderer = renderers[i];
+			switch (this._activeColumns[i])
+			{
+				case ColumnType.Beats:
+					this.RenderStoryBeats(
+						this._display.CurrentStoryThread!,
+						renderer);
+					break;
+				case ColumnType.Chapters:
+					this.RenderChapters(this._story, renderer);
+					break;
+				case ColumnType.Threads:
+					this.RenderStoryThreads(this._story, renderer);
+					break;
+			}
+
+			renderer.RenderFrame();
+		}
+	}
+
 	private void RenderStoryThreads(Story story, TextRenderer renderer)
 	{
 		renderer.Print(story.Name);

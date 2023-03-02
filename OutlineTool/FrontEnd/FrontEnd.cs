@@ -86,8 +86,15 @@ public partial class FrontEnd
 					return;
 				}
 
-				var nextIndex = Math.Min(this._display.CurrentStoryThread!.Order, this._story.Threads.Count);
-				this._display.SetCurrentStoryThread(null);
+				var nextIndex = input.Modifiers == ConsoleModifiers.Shift
+					? Math.Max(
+						this._display.CurrentStoryThread!.Order - 1,
+						0)
+					: Math.Min(
+						this._display.CurrentStoryThread!.Order + 1,
+						this._story.Threads.Count - 1);
+				this._display.SetCurrentStoryThread(
+					this._story.Threads[nextIndex]);
 				this._activeColumns =
 					this._display.CalculateActiveColumns();
 				this._cursor.Reset();

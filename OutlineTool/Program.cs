@@ -31,7 +31,7 @@ public class Program
 				* add a new thread
 					- specify color
 				* "drag" threads around
-				- switch between threads to view
+				* switch between threads to view
 				- delete thread (with confirmation)
 			- chapters
 				* add chapter

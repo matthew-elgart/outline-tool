@@ -10,7 +10,7 @@ public class Display
 		this.CurrentStoryThread = null;
 	}
 
-	public void SetCurrentStoryThread(StoryThread storyThread)
+	public void SetCurrentStoryThread(StoryThread? storyThread)
 	{
 		this._displayLeftColumn = true;
 		this.CurrentStoryThread = storyThread;

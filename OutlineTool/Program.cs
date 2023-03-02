@@ -44,10 +44,11 @@ public class Program
 				* to start, consider not enforcing consistent order between threads/chapters
 					- if it's valuable, could offer a warning when dragging beats in a thread, and then unassigning from chapter
 					- and when moving between chapters, could offer a warning and then auto update thread order
-			- toggle colors
+			* toggle colors
 		- cleanup frontend state, consider moving everything to functions
 			* factor out cursor state
 			* factor out state for displayed stuff?
+			- consider what it would take to split out frontend rendering from frontend state
 		* GetConfiguredRenderers can't be the best way to do that lol
 		- scrolling for rendering?
 		- make all those user actions look nice
@@ -55,6 +56,7 @@ public class Program
 			- nano-esque "user input area" at the bottom?
 				- maybe easy to build on thread/chapter situation
 			- bug: when not rendering on a spot, nothing gets erased
+		- consider giving display access to parent (in a partial class)
 		- take a pass to rethink any keybinds
 		- consider updating render only when things are added
 			- may not need to bother with async at all

@@ -20,6 +20,7 @@ public partial class FrontEnd
 		{ ColumnType.Chapters, "chapter" },
 		{ ColumnType.Threads, "story thread" }
 	};
+	private bool _enableColors;
 
 	private Cursor _cursor;
 	private (ColumnType Column, int Index)? _selection;
@@ -256,6 +257,10 @@ public partial class FrontEnd
 				this._selection = null;
 				this._cursor.Reset();
 				break;
+
+			case ConsoleKey.T:
+				this._enableColors = !this._enableColors;
+				break;
 		}
 	}
 
@@ -321,17 +326,20 @@ public partial class FrontEnd
 			var highlightText =
 				this._cursor.Column == ColumnType.Threads
 				&& storyThread.Order == this._cursor.Index;
+			var color = this._enableColors
+				? storyThread.TextColor
+				: ConsoleColor.Gray;
 
 			renderer.Print();
 			renderer.Print(
 				stringToPrint,
 				indentation: 2,
-				color: storyThread.TextColor,
+				color: color,
 				highlighted: highlightText);
 			renderer.Print(
 				new string('-', stringToPrint.Length),
 				indentation: 2,
-				color: storyThread.TextColor,
+				color: color,
 				highlighted: highlightText);
 		}
 	}
@@ -340,10 +348,14 @@ public partial class FrontEnd
 		StoryThread thread,
 		TextRenderer renderer)
 	{
-		renderer.Print(thread.Name, color:thread.TextColor);
+		var color = this._enableColors
+			? thread.TextColor
+			: ConsoleColor.Gray;
+
+		renderer.Print(thread.Name, color: color);
 		renderer.Print(
 			new string('-', thread.Name.Length),
-			color: thread.TextColor);
+			color: color);
 
 		foreach (var beat in thread.StoryBeats)
 		{
@@ -389,7 +401,9 @@ public partial class FrontEnd
 				renderer.Print(
 					beat.Name,
 					indentation: 4,
-					color: thread.TextColor);
+					color: this._enableColors
+						? thread.TextColor
+						: ConsoleColor.Gray);
 			}
 		}
 	}

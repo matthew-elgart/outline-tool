@@ -50,7 +50,7 @@ public class Program
 			* factor out state for displayed stuff?
 			- consider what it would take to split out frontend rendering from frontend state
 		* GetConfiguredRenderers can't be the best way to do that lol
-		- scrolling for rendering?
+		* scrolling for rendering?
 		- make all those user actions look nice
 			- decide on how to highlight and stuff
 			- nano-esque "user input area" at the bottom?
@@ -112,6 +112,8 @@ public class Program
 			await Task.Delay(tickRate);
 		} while (!exit);
 
+		// so terminal prompt shows up at the bottom without any scrolling
+		Console.SetCursorPosition(0, Console.WindowHeight - 3);
 		cts.Cancel();
 		await monitorKeyPresses;
 		Console.CursorVisible = true;

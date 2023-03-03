@@ -32,6 +32,8 @@ public partial class FrontEnd
 	// deallocate renderers, so I'm keeping them around
 	private TextRenderer _leftRenderer = new();
 	private TextRenderer _rightRenderer = new();
+	private TextRenderer _topRenderer = new();
+	private TextRenderer _bottomRenderer = new();
 
 	public FrontEnd(Story story)
 	{
@@ -313,12 +315,21 @@ public partial class FrontEnd
 
 			renderer.RenderFrame();
 		}
+
+		this._topRenderer.Reset(0, 0, Console.WindowWidth, 2);
+		this._bottomRenderer.Reset(
+			xPosition: 0,
+			yPosition: Console.WindowHeight - 4,
+			width: Console.WindowWidth,
+			height: 4);
+		this._topRenderer.RenderFrame();
+		this._bottomRenderer.RenderFrame();
 	}
 
 	private void RenderStoryThreads(Story story, TextRenderer renderer)
 	{
-		renderer.Print(story.Name);
-		renderer.Print(new string('-', story.Name.Length));
+		renderer.Print(story.Name, isHeader: true);
+		renderer.Print(new string('-', story.Name.Length), isHeader: true);
 
 		foreach (var storyThread in story.Threads)
 		{
@@ -330,7 +341,8 @@ public partial class FrontEnd
 				? storyThread.TextColor
 				: ConsoleColor.Gray;
 
-			renderer.Print();
+			// want to count the first bit of whitespace as part of the header
+			renderer.Print(isHeader: storyThread.Order == 0);
 			renderer.Print(
 				stringToPrint,
 				indentation: 2,
@@ -352,10 +364,11 @@ public partial class FrontEnd
 			? thread.TextColor
 			: ConsoleColor.Gray;
 
-		renderer.Print(thread.Name, color: color);
+		renderer.Print(thread.Name, color: color, isHeader: true);
 		renderer.Print(
 			new string('-', thread.Name.Length),
-			color: color);
+			color: color,
+			isHeader: true);
 
 		foreach (var beat in thread.StoryBeats)
 		{
@@ -363,7 +376,8 @@ public partial class FrontEnd
 				this._cursor.Column == ColumnType.Beats
 				&& beat.Order == this._cursor.Index;
 
-			renderer.Print();
+			// want to count the first bit of whitespace as part of the header
+			renderer.Print(isHeader: beat.Order == 0);
 			renderer.Print(
 				$"{beat.Name}{(beat.Chapter != null ? $" (Chapter {beat.Chapter.Order + 1})" : "")}",
 				indentation: 2,
@@ -373,8 +387,8 @@ public partial class FrontEnd
 
 	private void RenderChapters(Story story, TextRenderer renderer)
 	{
-		renderer.Print(story.Name);
-		renderer.Print(new string('-', story.Name.Length));
+		renderer.Print(story.Name, isHeader: true);
+		renderer.Print(new string('-', story.Name.Length), isHeader: true);
 
 		foreach (var chapter in story.Chapters)
 		{
@@ -383,7 +397,8 @@ public partial class FrontEnd
 				this._cursor.Column == ColumnType.Chapters
 				&& chapter.Order == this._cursor.Index;
 
-			renderer.Print();
+			// want to count the first bit of whitespace as part of the header
+			renderer.Print(isHeader: chapter.Order == 0);
 			renderer.Print(
 				stringToPrint,
 				indentation: 2,
@@ -403,7 +418,8 @@ public partial class FrontEnd
 					indentation: 4,
 					color: this._enableColors
 						? thread.TextColor
-						: ConsoleColor.Gray);
+						: ConsoleColor.Gray,
+					highlighted: highlightText);
 			}
 		}
 	}

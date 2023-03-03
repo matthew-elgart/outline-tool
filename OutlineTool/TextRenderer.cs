@@ -7,20 +7,10 @@ public class TextRenderer
 	private int _width;
 	private int _height;
 
-	private List<ColoredString> Lines;
+	private int _previousWindowTop = 0;
+	private int _headerSize = 0;
 
-	public TextRenderer() : this(0, 0, 0, 0) { }
-
-	// todo: consider removing
-	public TextRenderer(int xPosition, int yPosition, int width, int height)
-	{
-		this._xPosition = xPosition;
-		this._yPosition = yPosition;
-		this._width = width;
-		this._height = height;
-
-		this.Lines = new();
-	}
+	private List<ColoredString> Lines = new();
 
 	/// <summary>
 	/// Clears the renderer's text buffer, and optionally update its
@@ -37,6 +27,8 @@ public class TextRenderer
 		this._width = width ?? this._width;
 		this._height = height ?? this._height;
 
+		this._headerSize = 0;
+
 		this.Lines.Clear();
 	}
 
@@ -50,8 +42,23 @@ public class TextRenderer
 		int indentation = 0,
 		ConsoleColor? color = null,
 		bool highlighted = false,
+		bool isHeader = false,
 		bool hasWrapped = false)
 	{
+		// allow lines to be specified as "header" lines that are not
+		// subject to scrolling. The header can be whatever size the
+		// consumer wants - but all header lines must be contiguous
+		// at the top
+		if (isHeader)
+		{
+			if (this._headerSize != this.Lines.Count)
+			{
+				throw new ArgumentException("All header lines must be together at the top of the renderer");
+			}
+
+			this._headerSize++;
+		}
+
 		var textLength = text?.Length ?? 0;
 
 		// denote that we are wrapping text from the previous line by giving
@@ -96,6 +103,7 @@ public class TextRenderer
 			indentation,
 			color,
 			highlighted,
+			isHeader,
 			hasWrapped: true
 		);
 		return;
@@ -137,13 +145,49 @@ public class TextRenderer
 	/// </summary>
 	public void RenderFrame()
 	{
+		if (this._headerSize > this._height)
+		{
+			throw new InvalidOperationException("Too many header lines that can't be scrolled");
+		}
+
 		// first, add blank lines to "render" - this is to overwrite any old text
 		// with whitespace if the new frame is shorter
-		var numBlankLinesToAdd = this._height - this.Lines.Count;
-		if (numBlankLinesToAdd < 0)
+		this.AddBlankLinesIfNecessary();
+
+		// print!
+		var currentY = this._yPosition;
+
+		// first, print the header lines (which will never scroll)
+		for (var i = 0; i < this._headerSize; i++)
 		{
-			throw new InvalidOperationException("Too many lines to render, and I don't know how to scroll!");
+			this.PrintLine(this.Lines[i], currentY);
+			currentY++;
 		}
+
+		// then, determine what scrolling window to render, and print
+		// those lines
+		int windowTop = this.GetScrollingWindowTop();
+		for (var i = windowTop;
+			i < windowTop + this._height - this._headerSize;
+			i++)
+		{
+			this.PrintLine(this.Lines[i], currentY);
+			currentY++;
+		}
+
+		// save off window top for next render cycle
+		this._previousWindowTop = windowTop;
+
+		// thought it made sense to do this here, but put the responsibility
+		// on the caller instead, so there was a chance to update dimensions
+		// in between renders, without needing to reset twice
+		// this.Reset();
+	}
+
+	private void AddBlankLinesIfNecessary()
+	{
+		var numBlankLinesToAdd = this._height - this.Lines.Count;
+		if (numBlankLinesToAdd < 0) { return; }
 
 		for (var i = 0; i < numBlankLinesToAdd; i++)
 		{
@@ -155,33 +199,103 @@ public class TextRenderer
 
 			this.Lines.Add(new(blankLine, ConsoleColor.Gray));
 		}
+	}
 
-		// sanity check: can remove if I see this later
-		if (this.Lines.Count != this._height)
+	private int GetScrollingWindowTop()
+	{
+		var linesCount = this.Lines.Count;
+		if (linesCount < this._height)
 		{
-			throw new InvalidOperationException("shouldn't get here!");
+			throw new InvalidOperationException($"There are fewer lines ({linesCount}) than the height of the text renderer ({this._height}), which shouldn't be possible");
 		}
 
-		// print!
-		var currentY = this._yPosition;
-		foreach (var line in this.Lines)
+		if (linesCount == this._height) { return this._headerSize; }
+
+		// the top of the scrolling window should always be below the
+		// header. Therefore, if the header has grown, we move our window down to compensate
+		var previousWindowTop = Math.Max(this._previousWindowTop, this._headerSize);
+		var windowSize = this._height - this._headerSize;
+
+		// if there are more lines than the renderer can display at once,
+		// we need to scroll. Use highlighted lines to determine where to
+		// scroll to. The algorithm:
+		// - if there's no highlighted text, maintain the same window as before
+		// - if the previous window already contains the highlighted text, don't move it
+		// - if the top of the highlighted text is higher than the window, scroll up to accommodate it
+		// - if the bottom of the highlighted text is lower than the window, scroll down to accommodate it
+		var highlightedIndexes =
+			Enumerable.Range(this._headerSize, linesCount - this._headerSize)
+			.Where(i => this.Lines[i].Highlighted)
+			.ToList();
+		if (!highlightedIndexes.Any()) { return previousWindowTop; }
+
+		var minHighlightedIndex = highlightedIndexes.Min();
+		var maxHighlightedIndex = highlightedIndexes.Max();
+
+		// scrolling looks a little nicer if we leave some padding, so
+		// do most of our logic against the padded min/max values (with
+		// one exception below)
+		const int Padding = 2;
+		var paddedMinHighlightedIndex = Math.Max(
+			minHighlightedIndex - Padding,
+			this._headerSize);
+		var paddedMaxHighlightedIndex = Math.Min(
+			maxHighlightedIndex + Padding,
+			linesCount - 1);
+
+		// "or equals" for the case where highlighted text spans more
+		// than the window can show. Without the equals check, the window
+		// flips between showing the top and bottom of the highlighted
+		// text on each frame. We arbitrarily choose to show the top of
+		// the highlighted text in this case, and include the equals
+		// check here
+		if (paddedMinHighlightedIndex <= previousWindowTop)
 		{
-			Console.SetCursorPosition(this._xPosition, currentY);
+			// the exception to always using the padded values. If the
+			// highlighted block is just on the edge of being too big,
+			// it may fit within the window, but not when we pad. In
+			// these cases, use the unpadded values so we can fit
+			// everything into view
+			var numHighlightedLines = maxHighlightedIndex
+				- minHighlightedIndex
+				+ 1;
+			var numPaddedHighlightedLines = paddedMaxHighlightedIndex
+				- paddedMinHighlightedIndex
+				+ 1;
+			if (numPaddedHighlightedLines > windowSize
+				&& numHighlightedLines <= windowSize)
+			{
+				return maxHighlightedIndex;
+			}
 
-			if (line.Highlighted) { Console.BackgroundColor = line.Color; }
-			Console.ForegroundColor = line.Highlighted
-				? ConsoleColor.Black
-				: line.Color;
-			Console.Write(line.Text);
-
-			Console.ResetColor();
-			currentY++;
+			return Math.Max(paddedMinHighlightedIndex, this._headerSize);
 		}
 
-		// thought it made sense to do this here, but put the responsibility
-		// on the caller instead, so there was a chance to update dimensions
-		// in between renders, without needing to reset twice
-		// this.Reset();
+		if (paddedMaxHighlightedIndex >= previousWindowTop + windowSize)
+		{
+			var difference = paddedMaxHighlightedIndex
+				- previousWindowTop
+				- windowSize
+				// +1 to account for indexing. We display up to *but not
+				// including* windowTop + windowSize
+				+ 1;
+			return previousWindowTop + difference;
+		}
+
+		return previousWindowTop;
+	}
+
+	private void PrintLine(ColoredString line, int currentY)
+	{
+		Console.SetCursorPosition(this._xPosition, currentY);
+
+		if (line.Highlighted) { Console.BackgroundColor = line.Color; }
+		Console.ForegroundColor = line.Highlighted
+			? ConsoleColor.Black
+			: line.Color;
+		Console.Write(line.Text);
+
+		Console.ResetColor();
 	}
 
 	private record ColoredString(

@@ -62,6 +62,13 @@ public static class StoryInfoProvider
 		};
 
 		story.Threads = new() { thread1, thread2 };
+
+		foreach (var i in Enumerable.Range(1, 20))
+		{
+			thread1.StoryBeats.InsertNewElement(
+				thread1.StoryBeats.Count,
+				$"extra story beat {i} that has lots of words so that it can wrap to the next line");
+		}
 		
 		return story;
 	}

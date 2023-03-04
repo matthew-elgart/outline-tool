@@ -60,6 +60,7 @@ public class Program
 		- take a pass to rethink any keybinds
 		- consider updating render only when things are added
 			- may not need to bother with async at all
+				- update: should definitely do this. Parallelism is causing ~a bug~ bugs
 			- can track previous console dimensions, and only render when they change (or on input)
 		- display errors better (maybe not)
 	*/

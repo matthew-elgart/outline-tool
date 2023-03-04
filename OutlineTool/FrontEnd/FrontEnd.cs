@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Spectre.Console;
 
 public partial class FrontEnd
 {
@@ -144,10 +145,7 @@ public partial class FrontEnd
 				var thingToAdd = this._columnTypeNames
 					[this._cursor.Column];
 
-			 	Console.SetCursorPosition(0, 20);
-				Console.Write($"New {thingToAdd} name?");
-				Console.SetCursorPosition(0, 21);
-				var name = Console.ReadLine();
+				var name = GetInputFromUser($"New {thingToAdd} name?");
 				if (name == string.Empty) { return; }
 
 				var list = this.GetCurrentElements();
@@ -183,10 +181,7 @@ public partial class FrontEnd
 				var thingToEdit = this._columnTypeNames
 					[this._cursor.Column];
 
-			 	Console.SetCursorPosition(0, 20);
-				Console.Write($"New {thingToEdit} name?");
-				Console.SetCursorPosition(0, 21);
-				var newName = Console.ReadLine();
+				var newName = GetInputFromUser($"New {thingToEdit} name?");
 				if (newName == string.Empty) { return; }
 
 				var element = editElements[this._cursor.Index];
@@ -204,11 +199,11 @@ public partial class FrontEnd
 					[this._cursor.Column];
 				do
 				{
-					Console.SetCursorPosition(0, 20);
-					Console.WriteLine(new string(' ', Console.WindowWidth));
-					Console.SetCursorPosition(0, 20);
-					Console.Write($"DELETE this {thingToDelete}? (y/n) ");
-					confirmation = Console.ReadLine();
+					Console.SetCursorPosition(1, Console.WindowHeight - 3);
+					Console.WriteLine(
+						new string(' ',
+						Console.WindowWidth - 2));
+					confirmation = GetInputFromUser($"DELETE this {thingToDelete} (y/n)");
 				} while (!new[] { "y", "n" }.Contains(confirmation));
 
 				if (confirmation == "y")
@@ -283,6 +278,19 @@ public partial class FrontEnd
 
 		if (result == null) { throw new ArgumentException("got a null element list for currently selected column type, which shouldn't be possible"); }
 		return result;
+	}
+
+	private static string GetInputFromUser(string prompt)
+	{
+		Console.SetCursorPosition(0, Console.WindowHeight - 5);
+		var panel = new Panel(prompt);
+		panel.Height = 4;
+		panel.Width = Console.WindowWidth;
+		AnsiConsole.Write(panel);
+
+		Console.SetCursorPosition(2, Console.WindowHeight - 3);
+		AnsiConsole.Write("> ");
+		return Console.ReadLine()!;
 	}
 
 #region rendering

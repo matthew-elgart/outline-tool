@@ -339,18 +339,25 @@ public partial class FrontEnd
 		renderer.Print(story.Name, isHeader: true);
 		renderer.Print(new string('-', story.Name.Length), isHeader: true);
 
-		foreach (var storyThread in story.Threads)
+		foreach (var thread in story.Threads)
 		{
-			var stringToPrint = storyThread.Name;
+			var stringToPrint = thread.Name;
 			var highlightText =
 				this._cursor.Column == ColumnType.Threads
-				&& storyThread.Order == this._cursor.Index;
+				&& thread.Order == this._cursor.Index
+				&& this._selection?.Column != ColumnType.Threads;
 			var color = this._enableColors
-				? storyThread.TextColor
+				? thread.TextColor
 				: ConsoleColor.Gray;
+			var shouldPutArrowAboveThisOne =
+				this.ShouldPutArrowAboveElement(
+					ColumnType.Threads,
+					thread.Order);
 
-			// want to count the first bit of whitespace as part of the header
-			renderer.Print(isHeader: storyThread.Order == 0);
+			renderer.Print(
+				// want to count the first bit of whitespace as part of the header
+				isHeader: thread.Order == 0,
+				arrow: shouldPutArrowAboveThisOne);
 			renderer.Print(
 				stringToPrint,
 				indentation: 2,
@@ -361,6 +368,13 @@ public partial class FrontEnd
 				indentation: 2,
 				color: color,
 				highlighted: highlightText);
+
+			if (this.ShouldAddArrowBelowElement(
+				ColumnType.Threads,
+				thread.Order))
+			{
+				renderer.Print(arrow: true);
+			}
 		}
 	}
 
@@ -382,14 +396,29 @@ public partial class FrontEnd
 		{
 			var highlightText =
 				this._cursor.Column == ColumnType.Beats
-				&& beat.Order == this._cursor.Index;
+				&& beat.Order == this._cursor.Index
+				&& this._selection?.Column != ColumnType.Beats;
+			var shouldPutArrowAboveThisOne =
+				this.ShouldPutArrowAboveElement(
+					ColumnType.Beats,
+					beat.Order);
 
-			// want to count the first bit of whitespace as part of the header
-			renderer.Print(isHeader: beat.Order == 0);
+			renderer.Print(
+				// want to count the first bit of whitespace as part of
+				// the header
+				isHeader: beat.Order == 0,
+				arrow: shouldPutArrowAboveThisOne);
 			renderer.Print(
 				$"{beat.Name}{(beat.Chapter != null ? $" (Chapter {beat.Chapter.Order + 1})" : "")}",
 				indentation: 2,
 				highlighted: highlightText);
+
+			if (this.ShouldAddArrowBelowElement(
+				ColumnType.Beats,
+				beat.Order))
+			{
+				renderer.Print(arrow: true);
+			}
 		}
 	}
 
@@ -403,10 +432,18 @@ public partial class FrontEnd
 			var stringToPrint = $"{chapter.Order + 1}. {chapter.Name}";
 			var highlightText =
 				this._cursor.Column == ColumnType.Chapters
-				&& chapter.Order == this._cursor.Index;
+				&& chapter.Order == this._cursor.Index
+				&& this._selection?.Column != ColumnType.Chapters;
+			var shouldPutArrowAboveThisOne =
+				this.ShouldPutArrowAboveElement(
+					ColumnType.Chapters,
+					chapter.Order);
 
-			// want to count the first bit of whitespace as part of the header
-			renderer.Print(isHeader: chapter.Order == 0);
+			renderer.Print(
+				// want to count the first bit of whitespace as part of
+				// the header
+				isHeader: chapter.Order == 0,
+				arrow: shouldPutArrowAboveThisOne);
 			renderer.Print(
 				stringToPrint,
 				indentation: 2,
@@ -429,7 +466,48 @@ public partial class FrontEnd
 						: ConsoleColor.Gray,
 					highlighted: highlightText);
 			}
+
+			if (this.ShouldAddArrowBelowElement(
+				ColumnType.Chapters,
+				chapter.Order))
+			{
+				renderer.Print(arrow: true);
+			}
 		}
+	}
+
+	private bool ShouldPutArrowAboveElement(ColumnType column, int order)
+	{
+		var swapping =
+			this._cursor.Column == column
+			&& this._selection?.Column == column;
+
+		if (!swapping) { return false; }
+
+		var shouldPutArrowAboveThis =
+			order == this._cursor.Index
+			&& order <= this._selection!.Value.Index;
+		var shouldPutArrowBelowPrevious =
+			order - 1 == this._cursor.Index
+			&& order - 1 > this._selection!.Value.Index;
+
+		return shouldPutArrowAboveThis || shouldPutArrowBelowPrevious;
+	}
+
+	private bool ShouldAddArrowBelowElement(ColumnType column, int order)
+	{
+		var swapping =
+			this._cursor.Column == column
+			&& this._selection?.Column == column;
+
+		// need to short-circuit on this because GetCurrentElements
+		// fails if there's no cursor
+		if (!swapping) { return false; }
+
+		var elements = this.GetCurrentElements();
+		return order == elements.Count - 1
+			&& order == this._cursor.Index
+			&& order > this._selection!.Value.Index;
 	}
 
 	private TextRenderer[] GetConfiguredRenderers(

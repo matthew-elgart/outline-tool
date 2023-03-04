@@ -1,3 +1,5 @@
+using Spectre.Console;
+
 public class TextRenderer
 {
 	// coordinates of the top left cell
@@ -43,8 +45,15 @@ public class TextRenderer
 		ConsoleColor? color = null,
 		bool highlighted = false,
 		bool isHeader = false,
+		bool arrow = false,
 		bool hasWrapped = false)
 	{
+		// there needs to be space for the arrow :)
+		if (arrow && indentation == 0 && text != null)
+		{
+			throw new ArgumentException("Can't put an arrow if there's no indentation");
+		}
+
 		// allow lines to be specified as "header" lines that are not
 		// subject to scrolling. The header can be whatever size the
 		// consumer wants - but all header lines must be contiguous
@@ -69,7 +78,12 @@ public class TextRenderer
 		// if we don't need to wrap, just proceed
 		if (textLength + indentationWithWrap <= this._width)
 		{
-			this.AddToBuffer(text, indentationWithWrap, color, highlighted);
+			this.AddToBuffer(
+				text,
+				indentationWithWrap,
+				color,
+				highlighted,
+				arrow);
 			return;
 		}
 
@@ -86,7 +100,8 @@ public class TextRenderer
 			text.Substring(0, lengthToPrintOnCurrentLine),
 			indentationWithWrap,
 			color,
-			highlighted
+			highlighted,
+			arrow
 		);
 
 		// now recursively print the carryover string. If we broke on whitespace,
@@ -104,6 +119,8 @@ public class TextRenderer
 			color,
 			highlighted,
 			isHeader,
+			// explicitly false so arrow only shows up on top line
+			arrow: false,
 			hasWrapped: true
 		);
 		return;
@@ -113,7 +130,8 @@ public class TextRenderer
 		string? text,
 		int indentation,
 		ConsoleColor? color,
-		bool highlighted)
+		bool highlighted,
+		bool arrow)
 	{
 		var textLength = text?.Length ?? 0;
 
@@ -135,7 +153,11 @@ public class TextRenderer
 			}
 		}
 
-		this.Lines.Add(new(lineText, color ?? ConsoleColor.Gray, highlighted));
+		this.Lines.Add(new(
+			lineText,
+			color ?? ConsoleColor.Gray,
+			highlighted,
+			arrow));
 	}
 
 	/// <summary>
@@ -225,7 +247,7 @@ public class TextRenderer
 		// - if the bottom of the highlighted text is lower than the window, scroll down to accommodate it
 		var highlightedIndexes =
 			Enumerable.Range(this._headerSize, linesCount - this._headerSize)
-			.Where(i => this.Lines[i].Highlighted)
+			.Where(i => this.Lines[i].Highlighted || this.Lines[i].Arrow)
 			.ToList();
 		if (!highlightedIndexes.Any()) { return previousWindowTop; }
 
@@ -289,11 +311,23 @@ public class TextRenderer
 	{
 		Console.SetCursorPosition(this._xPosition, currentY);
 
-		if (line.Highlighted) { Console.BackgroundColor = line.Color; }
-		Console.ForegroundColor = line.Highlighted
-			? ConsoleColor.Black
-			: line.Color;
-		Console.Write(line.Text);
+		//if (line.Highlighted) { Console.BackgroundColor = line.Color; }
+		//Console.ForegroundColor = line.Highlighted
+			//? ConsoleColor.Black
+			//: line.Color;
+		//Console.Write(line.Text);
+		if (line.Highlighted)
+		{
+			var str = new string(line.Text);
+			AnsiConsole.Markup($"[invert]{str.EscapeMarkup()}[/]");
+		}
+		else if (line.Arrow)
+		{
+			var str = new string(line.Text);
+			var toPrint = $"[bold white]>[/]{str.Substring(1).EscapeMarkup()}";
+			AnsiConsole.Markup(toPrint);
+		}
+		else { AnsiConsole.Write(line.Text); }
 
 		Console.ResetColor();
 	}
@@ -301,5 +335,6 @@ public class TextRenderer
 	private record ColoredString(
 		char[] Text,
 		ConsoleColor Color,
-		bool Highlighted = false);
+		bool Highlighted = false,
+		bool Arrow = false);
 }

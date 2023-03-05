@@ -210,6 +210,18 @@ public partial class FrontEnd
 				var confirmation = string.Empty;
 				var thingToDelete = this._columnTypeNames
 					[this._cursor.Column];
+
+				if (this._cursor.Column == ColumnType.Threads)
+				{
+					var storyThread =
+						(StoryThread)deleteElements[this._cursor.Index];
+					if (storyThread.StoryBeats.Any())
+					{
+						GetInputFromUser("Can't delete story thread while it has story beats. Press ENTER to continue");
+						return;
+					}
+				}
+
 				do
 				{
 					Console.SetCursorPosition(1, Console.WindowHeight - 3);

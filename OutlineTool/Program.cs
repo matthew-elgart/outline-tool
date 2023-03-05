@@ -22,7 +22,7 @@ public class Program
 			- factor to its own service to share options
 			- let user input name? maybe not yet
 		- user actions (while handling navigation props)
-			- threads
+			* threads
 				* add beat to thread
 					* refactor this like talking with michael
 				* "drag" beat within thread
@@ -32,7 +32,7 @@ public class Program
 					* specify color
 				* "drag" threads around
 				* switch between threads to view
-				- delete thread (with confirmation)
+				* delete thread (with confirmation)
 			- chapters
 				* add chapter
 				* "drag" chapter around

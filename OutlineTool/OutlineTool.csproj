@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <!--<PackageReference Include="Spectre.Console" Version="0.46.0" /> -->
+	<!-- Modified version of the package, local to me :( -->
     <PackageReference Include="Spectre.Console" Version="0.46.1-preview.0.13" />
   </ItemGroup>
 

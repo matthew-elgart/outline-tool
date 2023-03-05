@@ -169,6 +169,13 @@ public partial class FrontEnd
 					};
 
 				list.InsertNewElement(index, name!);
+
+				if (this._cursor.Column == ColumnType.Threads)
+				{
+					var color = GetColorFromUser();
+					((StoryThread)list[index]).TextColor = color;
+				}
+
 				this._cursor.Reset();
 				break;
 			case ConsoleKey.E:
@@ -186,6 +193,12 @@ public partial class FrontEnd
 
 				var element = editElements[this._cursor.Index];
 				element.Name = newName!;
+
+				if (this._cursor.Column == ColumnType.Threads)
+				{
+					var color = GetColorFromUser();
+					((StoryThread)element).TextColor = color;
+				}
 				break;
 			case ConsoleKey.D:
 				if (this._selectingNewElement) { return; }
@@ -283,14 +296,45 @@ public partial class FrontEnd
 	private static string GetInputFromUser(string prompt)
 	{
 		Console.SetCursorPosition(0, Console.WindowHeight - 5);
-		var panel = new Panel(prompt);
-		panel.Height = 4;
-		panel.Width = Console.WindowWidth;
-		AnsiConsole.Write(panel);
+		AnsiConsole.Write(new Rule());
+		
+		Console.SetCursorPosition(2, Console.WindowHeight - 4);
+		AnsiConsole.Write(prompt);
 
-		Console.SetCursorPosition(2, Console.WindowHeight - 3);
+		Console.SetCursorPosition(2, Console.WindowHeight - 2);
 		AnsiConsole.Write("> ");
 		return Console.ReadLine()!;
+	}
+
+	private static ConsoleColor GetColorFromUser()
+	{
+		for (var i = 1; i <= 7; i++)
+		{
+			Console.SetCursorPosition(0, Console.WindowHeight - i);
+			Console.Write(new string(' ', Console.WindowWidth));
+		}
+
+		Console.SetCursorPosition(0, Console.WindowHeight - 8);
+		AnsiConsole.Write(new Rule());
+
+		Console.SetCursorPosition(2, Console.WindowHeight - 7);
+		AnsiConsole.WriteLine("New story thread color?");
+
+		Console.SetCursorPosition(0, Console.WindowHeight - 5);
+		var prompt = new SelectionPrompt<ConsoleColor>()
+			.PageSize(4)
+			.MoreChoicesText(string.Empty)
+			.HighlightStyle(Style.Plain)
+			.AddChoices(Enum.GetValues<ConsoleColor>())
+			.UseConverter(c =>
+			{
+				var s = ((Color)c).ToMarkup();
+				return $"[{s}]{c.ToString()}[/]";
+			});
+
+		var color = AnsiConsole.Prompt(prompt);
+		Console.CursorVisible = false;
+		return color;
 	}
 
 #region rendering

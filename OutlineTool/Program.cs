@@ -29,7 +29,7 @@ public class Program
 				* rename thread
 				* delete beat (with confirmation)
 				* add a new thread
-					- specify color
+					* specify color
 				* "drag" threads around
 				* switch between threads to view
 				- delete thread (with confirmation)

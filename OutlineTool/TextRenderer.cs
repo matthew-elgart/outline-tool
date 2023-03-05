@@ -311,23 +311,16 @@ public class TextRenderer
 	{
 		Console.SetCursorPosition(this._xPosition, currentY);
 
-		//if (line.Highlighted) { Console.BackgroundColor = line.Color; }
-		//Console.ForegroundColor = line.Highlighted
-			//? ConsoleColor.Black
-			//: line.Color;
-		//Console.Write(line.Text);
-		if (line.Highlighted)
+		var toPrint = new string(line.Text);
+		if (line.Arrow)
 		{
-			var str = new string(line.Text);
-			AnsiConsole.Markup($"[invert]{str.EscapeMarkup()}[/]");
+			toPrint = $"[bold white]>[/]{toPrint.Substring(1).EscapeMarkup()}";
 		}
-		else if (line.Arrow)
-		{
-			var str = new string(line.Text);
-			var toPrint = $"[bold white]>[/]{str.Substring(1).EscapeMarkup()}";
-			AnsiConsole.Markup(toPrint);
-		}
-		else { AnsiConsole.Write(line.Text); }
+
+		var styles = Color.FromConsoleColor(line.Color).ToMarkup();
+		if (line.Highlighted) { styles += " invert"; }
+
+		AnsiConsole.Markup($"[{styles}]{toPrint}[/]");
 
 		Console.ResetColor();
 	}

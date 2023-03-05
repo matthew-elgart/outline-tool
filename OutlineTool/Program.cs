@@ -66,11 +66,25 @@ public class Program
 	*/
 	private static async Task Main(string[] args)
 	{
+		var filePath = args.SingleOrDefault();
+		Story story;
+
+		if (filePath == null)
+		{
+			Console.WriteLine("No save file was given (in order to load a pre-existing story, provide the save file as a console argument). Proceeding with a new story.");
+			Console.WriteLine("What is the title of your story?");
+			Console.Write("> ");
+
+			var title = Console.ReadLine();
+			if (title == string.Empty) { return; }
+			story = new() { Name = title! };
+		}
+		else { story = LoadStory(filePath); }
+
 		Console.Clear();
 		Console.CursorVisible = false;
 
 		var tickRate = TimeSpan.FromMilliseconds(100);
-		var story = StoryInfoProvider.Get();
 		var frontEnd = new FrontEnd(story);
 		var exit = false;
 
@@ -120,70 +134,24 @@ public class Program
 		Console.CursorVisible = true;
 	}
 
-	private static void RenderStoryThread(
-		StoryThread thread,
-		TextRenderer renderer)
+	//private static void SaveStory(Story story)
+	//{
+		//var fileName = "test.json";
+
+		//var options = new JsonSerializerOptions
+		//{
+			//ReferenceHandler = ReferenceHandler.Preserve
+		//};
+		//var serializedStory = JsonSerializer.Serialize(
+			//story,
+			//options: options
+		//);
+
+		//File.WriteAllText(fileName, serializedStory);
+	//}
+
+	private static Story LoadStory(string fileName)
 	{
-		renderer.Print(thread.Name, color:thread.TextColor);
-		renderer.Print(
-			new string('-', thread.Name.Length),
-			color: thread.TextColor);
-
-		foreach (var beat in thread.StoryBeats)
-		{
-			renderer.Print();
-			renderer.Print(
-				$"{beat.Name}{(beat.Chapter != null ? $" (Chapter {beat.Chapter.Order})" : "")}",
-				indentation: 2);
-		}
-	}
-
-	private static void RenderStory(Story story, TextRenderer renderer)
-	{
-		renderer.Print(story.Name);
-		renderer.Print(new string('-', story.Name.Length));
-
-		foreach (var chapter in story.Chapters)
-		{
-			var stringToPrint = $"{chapter.Order}. {chapter.Name}";
-
-			renderer.Print();
-			renderer.Print(stringToPrint, indentation: 2);
-			renderer.Print(new string('-', stringToPrint.Length), indentation: 2);
-
-			foreach (var beat in chapter.StoryBeats)
-			{
-				var thread = story.Threads
-					.Single(t => t.StoryBeats.Contains(beat));
-				
-				renderer.Print(
-					beat.Name,
-					indentation: 4,
-					color: thread.TextColor);
-			}
-		}
-	}
-
-	private static void SaveStory(Story story)
-	{
-		var fileName = "test.json";
-
-		var options = new JsonSerializerOptions
-		{
-			ReferenceHandler = ReferenceHandler.Preserve
-		};
-		var serializedStory = JsonSerializer.Serialize(
-			story,
-			options: options
-		);
-
-		File.WriteAllText(fileName, serializedStory);
-	}
-
-	private static Story LoadStory()
-	{
-		var fileName = "test.json";
-
 		var options = new JsonSerializerOptions
 		{
 			ReferenceHandler = ReferenceHandler.Preserve

@@ -283,6 +283,30 @@ public partial class FrontEnd
 			case ConsoleKey.T:
 				this._enableColors = !this._enableColors;
 				break;
+
+			case ConsoleKey.S:
+				if (this._story.SaveFileLocation == null)
+				{
+					var prompt = "Name of the save file?";
+					var fileName = GetInputFromUser(prompt);
+					if (fileName == string.Empty) { return; }
+					this._story.SaveFileLocation = $"{fileName}.json";
+				}
+
+				var options = new JsonSerializerOptions
+				{
+					ReferenceHandler = ReferenceHandler.Preserve
+				};
+				var serializedStory = JsonSerializer.Serialize(
+					this._story,
+					options: options
+				);
+
+				File.WriteAllText(
+					this._story.SaveFileLocation,
+					serializedStory);
+				GetInputFromUser($"Successful save of {this._story.SaveFileLocation}. Press ENTER to continue");
+				break;
 		}
 	}
 

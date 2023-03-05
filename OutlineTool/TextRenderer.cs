@@ -247,7 +247,7 @@ public class TextRenderer
 		// - if the bottom of the highlighted text is lower than the window, scroll down to accommodate it
 		var highlightedIndexes =
 			Enumerable.Range(this._headerSize, linesCount - this._headerSize)
-			.Where(i => this.Lines[i].Selected || this.Lines[i].Arrow)
+			.Where(i => this.Lines[i].Arrow)
 			.ToList();
 		if (!highlightedIndexes.Any()) { return previousWindowTop; }
 

@@ -392,8 +392,8 @@ public partial class FrontEnd
 
 	private void RenderStoryThreads(Story story, TextRenderer renderer)
 	{
-		renderer.Print(story.Name, isHeader: true);
-		renderer.Print(new string('-', story.Name.Length), isHeader: true);
+		renderer.Print("Story Threads", isHeader: true);
+		renderer.Print(new string('-', "Story Threads".Length), isHeader: true);
 
 		foreach (var thread in story.Threads)
 		{

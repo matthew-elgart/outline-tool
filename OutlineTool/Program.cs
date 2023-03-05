@@ -52,7 +52,7 @@ public class Program
 		* GetConfiguredRenderers can't be the best way to do that lol
 		* scrolling for rendering?
 		- make all those user actions look nice
-			- decide on how to highlight and stuff
+			* decide on how to highlight and stuff
 			- nano-esque "user input area" at the bottom?
 				- maybe easy to build on thread/chapter situation
 			- bug: when not rendering on a spot, nothing gets erased

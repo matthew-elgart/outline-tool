@@ -398,17 +398,21 @@ public partial class FrontEnd
 		foreach (var thread in story.Threads)
 		{
 			var stringToPrint = thread.Name;
-			var highlightText =
+			var cursorIsHere =
 				this._cursor.Column == ColumnType.Threads
 				&& thread.Order == this._cursor.Index
-				&& this._selection?.Column != ColumnType.Threads;
+				&& (this._selection?.Column != ColumnType.Threads
+					|| this._selection?.Index == thread.Order);
 			var color = this._enableColors
 				? thread.TextColor
 				: ConsoleColor.Gray;
 			var shouldPutArrowAboveThisOne =
 				this.ShouldPutArrowAboveElement(
 					ColumnType.Threads,
-					thread.Order);
+					thread.Order)
+				&& !cursorIsHere;
+			var selected = this._selection?.Column == ColumnType.Threads
+				&& this._selection?.Index == thread.Order;
 
 			renderer.Print(
 				// want to count the first bit of whitespace as part of the header
@@ -418,12 +422,13 @@ public partial class FrontEnd
 				stringToPrint,
 				indentation: 2,
 				color: color,
-				highlighted: highlightText);
+				selected: selected,
+				arrow: cursorIsHere);
 			renderer.Print(
 				new string('-', stringToPrint.Length),
 				indentation: 2,
 				color: color,
-				highlighted: highlightText);
+				selected: selected);
 
 			if (this.ShouldAddArrowBelowElement(
 				ColumnType.Threads,
@@ -450,14 +455,18 @@ public partial class FrontEnd
 
 		foreach (var beat in thread.StoryBeats)
 		{
-			var highlightText =
+			var cursorIsHere =
 				this._cursor.Column == ColumnType.Beats
 				&& beat.Order == this._cursor.Index
-				&& this._selection?.Column != ColumnType.Beats;
+				&& (this._selection?.Column != ColumnType.Beats
+					|| this._selection?.Index == beat.Order);
 			var shouldPutArrowAboveThisOne =
 				this.ShouldPutArrowAboveElement(
 					ColumnType.Beats,
-					beat.Order);
+					beat.Order)
+				&& !cursorIsHere;
+			var selected = this._selection?.Column == ColumnType.Beats
+				&& this._selection?.Index == beat.Order;
 
 			renderer.Print(
 				// want to count the first bit of whitespace as part of
@@ -467,7 +476,8 @@ public partial class FrontEnd
 			renderer.Print(
 				$"{beat.Name}{(beat.Chapter != null ? $" (Chapter {beat.Chapter.Order + 1})" : "")}",
 				indentation: 2,
-				highlighted: highlightText);
+				selected: selected,
+				arrow: cursorIsHere);
 
 			if (this.ShouldAddArrowBelowElement(
 				ColumnType.Beats,
@@ -486,14 +496,18 @@ public partial class FrontEnd
 		foreach (var chapter in story.Chapters)
 		{
 			var stringToPrint = $"{chapter.Order + 1}. {chapter.Name}";
-			var highlightText =
+			var cursorIsHere =
 				this._cursor.Column == ColumnType.Chapters
 				&& chapter.Order == this._cursor.Index
-				&& this._selection?.Column != ColumnType.Chapters;
+				&& (this._selection?.Column != ColumnType.Chapters
+					|| this._selection?.Index == chapter.Order);
 			var shouldPutArrowAboveThisOne =
 				this.ShouldPutArrowAboveElement(
 					ColumnType.Chapters,
-					chapter.Order);
+					chapter.Order)
+				&& !cursorIsHere;
+			var selected = this._selection?.Column == ColumnType.Chapters
+				&& this._selection?.Index == chapter.Order;
 
 			renderer.Print(
 				// want to count the first bit of whitespace as part of
@@ -503,11 +517,12 @@ public partial class FrontEnd
 			renderer.Print(
 				stringToPrint,
 				indentation: 2,
-				highlighted: highlightText);
+				selected: selected,
+				arrow: cursorIsHere);
 			renderer.Print(
 				new string('-', stringToPrint.Length),
 				indentation: 2,
-				highlighted: highlightText);
+				selected: selected);
 
 			foreach (var beat in chapter.StoryBeats)
 			{
@@ -520,7 +535,7 @@ public partial class FrontEnd
 					color: this._enableColors
 						? thread.TextColor
 						: ConsoleColor.Gray,
-					highlighted: highlightText);
+					selected: selected);
 			}
 
 			if (this.ShouldAddArrowBelowElement(

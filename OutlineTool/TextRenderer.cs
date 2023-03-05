@@ -43,7 +43,7 @@ public class TextRenderer
 		string? text = null,
 		int indentation = 0,
 		ConsoleColor? color = null,
-		bool highlighted = false,
+		bool selected = false,
 		bool isHeader = false,
 		bool arrow = false,
 		bool hasWrapped = false)
@@ -82,7 +82,7 @@ public class TextRenderer
 				text,
 				indentationWithWrap,
 				color,
-				highlighted,
+				selected,
 				arrow);
 			return;
 		}
@@ -100,7 +100,7 @@ public class TextRenderer
 			text.Substring(0, lengthToPrintOnCurrentLine),
 			indentationWithWrap,
 			color,
-			highlighted,
+			selected,
 			arrow
 		);
 
@@ -117,7 +117,7 @@ public class TextRenderer
 			),
 			indentation,
 			color,
-			highlighted,
+			selected,
 			isHeader,
 			// explicitly false so arrow only shows up on top line
 			arrow: false,
@@ -130,7 +130,7 @@ public class TextRenderer
 		string? text,
 		int indentation,
 		ConsoleColor? color,
-		bool highlighted,
+		bool selected,
 		bool arrow)
 	{
 		var textLength = text?.Length ?? 0;
@@ -156,7 +156,7 @@ public class TextRenderer
 		this.Lines.Add(new(
 			lineText,
 			color ?? ConsoleColor.Gray,
-			highlighted,
+			selected,
 			arrow));
 	}
 
@@ -247,7 +247,7 @@ public class TextRenderer
 		// - if the bottom of the highlighted text is lower than the window, scroll down to accommodate it
 		var highlightedIndexes =
 			Enumerable.Range(this._headerSize, linesCount - this._headerSize)
-			.Where(i => this.Lines[i].Highlighted || this.Lines[i].Arrow)
+			.Where(i => this.Lines[i].Selected || this.Lines[i].Arrow)
 			.ToList();
 		if (!highlightedIndexes.Any()) { return previousWindowTop; }
 
@@ -311,16 +311,24 @@ public class TextRenderer
 	{
 		Console.SetCursorPosition(this._xPosition, currentY);
 
-		var toPrint = new string(line.Text);
+		var toPrint = new string(line.Text).EscapeMarkup();;
 		if (line.Arrow)
 		{
-			toPrint = $"[bold white]>[/]{toPrint.Substring(1).EscapeMarkup()}";
+			// we'll add this back as the arrow, after applying styles
+			// to the rest of the line
+			toPrint = toPrint.Substring(1);
 		}
 
 		var styles = Color.FromConsoleColor(line.Color).ToMarkup();
-		if (line.Highlighted) { styles += " invert"; }
+		if (line.Selected) { styles += " bold dim"; }
+		toPrint = $"[{styles}]{toPrint}[/]";
 
-		AnsiConsole.Markup($"[{styles}]{toPrint}[/]");
+		if (line.Arrow)
+		{
+			toPrint = $"[bold white]>[/]{toPrint}";
+		}
+
+		AnsiConsole.Markup(toPrint);
 
 		Console.ResetColor();
 	}
@@ -328,6 +336,6 @@ public class TextRenderer
 	private record ColoredString(
 		char[] Text,
 		ConsoleColor Color,
-		bool Highlighted = false,
+		bool Selected = false,
 		bool Arrow = false);
 }

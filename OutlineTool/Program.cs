@@ -99,39 +99,19 @@ public class Program
 		var frontEnd = new FrontEnd(story);
 		var exit = false;
 
-		var handlingInput = false;
-
-		using var cts = new CancellationTokenSource();
-		async Task MonitorKeyPresses()
-		{
-			while (!cts.Token.IsCancellationRequested)
-			{
-				if (Console.KeyAvailable)
-				{
-					handlingInput = true;
-					var input = Console.ReadKey(intercept: true);
-
-					if (input.Key == ConsoleKey.Escape)
-					{ 
-						exit = true;
-						return;
-					}
-					
-					frontEnd.HandleInput(input);
-				}
-
-				handlingInput = false;
-
-				await Task.Delay(10);
-			}
-		}
-
-		var monitorKeyPresses = MonitorKeyPresses();
-
 		do
 		{
-			if (!handlingInput)
+			if (Console.KeyAvailable)
 			{
+				var input = Console.ReadKey(intercept: true);
+
+				if (input.Key == ConsoleKey.Escape)
+				{ 
+					exit = true;
+					return;
+				}
+
+				frontEnd.HandleInput(input);
 				frontEnd.Render();
 			}
 
@@ -140,8 +120,6 @@ public class Program
 
 		// so terminal prompt shows up at the bottom without any scrolling
 		Console.SetCursorPosition(0, Console.WindowHeight - 3);
-		cts.Cancel();
-		await monitorKeyPresses;
 		Console.CursorVisible = true;
 	}
 

@@ -79,7 +79,18 @@ public class Program
 			if (title == string.Empty) { return; }
 			story = new() { Name = title! };
 		}
-		else { story = LoadStory(filePath); }
+		else
+		{
+			try
+			{
+				story = LoadStory(filePath);
+			}
+			catch
+			{
+				Console.WriteLine($"Could not load file {filePath}. You'll probably want to git gud and try again.");
+				return;
+			}
+		}
 
 		Console.Clear();
 		Console.CursorVisible = false;

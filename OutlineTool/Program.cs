@@ -99,8 +99,13 @@ public class Program
 		var frontEnd = new FrontEnd(story);
 		var exit = false;
 
+		var prevConsoleHeight = -1;
+		var prevConsoleWidth = -1;
+
 		do
 		{
+			var shouldRender = false;
+
 			if (Console.KeyAvailable)
 			{
 				var input = Console.ReadKey(intercept: true);
@@ -112,8 +117,21 @@ public class Program
 				}
 
 				frontEnd.HandleInput(input);
-				frontEnd.Render();
+				shouldRender = true;
 			}
+			else
+			{
+				var newHeight = Console.WindowHeight;
+				var newWidth = Console.WindowWidth;
+				if (newHeight != prevConsoleHeight || newWidth != prevConsoleWidth)
+				{
+					shouldRender = true;
+					prevConsoleHeight = newHeight;
+					prevConsoleWidth = newWidth;
+				}
+			}
+
+			if (shouldRender) { frontEnd.Render(); }
 
 			await Task.Delay(tickRate);
 		} while (!exit);

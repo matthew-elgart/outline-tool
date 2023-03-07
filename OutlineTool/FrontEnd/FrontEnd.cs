@@ -199,6 +199,8 @@ public partial class FrontEnd
 					var color = GetColorFromUser();
 					((StoryThread)element).TextColor = color;
 				}
+
+				this._cursor.Reset();
 				break;
 			case ConsoleKey.D:
 				if (this._selectingNewElement) { return; }

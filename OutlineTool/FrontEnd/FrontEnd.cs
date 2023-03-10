@@ -27,6 +27,9 @@ public partial class FrontEnd
 	private (ColumnType Column, int Index)? _selection;
 	private bool _selectingNewElement => this._selection != null;
 
+	//private (Story?, Display?) _backups;
+	private UndoRedoStack<FrontEndState> _undoRedoStack;
+
 	// arguably we don't need these, since we configure the renderers
 	// anew each cycle (so we could instead *create* and configure them).
 	// But I liked the idea of not needing to constantly allocate and
@@ -40,6 +43,24 @@ public partial class FrontEnd
 	{
 		this._story = story;
 		this._cursor = new(this);
+
+		this._display.ToggleLeftColumn();
+		this._activeColumns =
+			this._display.CalculateActiveColumns();
+		this._cursor.Reset();
+
+		var currentThread = this._display.CurrentStoryThread;
+		var backupStory = this._story.DeepCopy(ref currentThread);
+		var backupDisplay = this._display.DeepCopy(currentThread);
+		var backupActiveColumns =
+			(ColumnType[])this._activeColumns.Clone();
+
+		this._undoRedoStack = new(
+			new(
+				backupStory,
+				backupDisplay,
+				backupActiveColumns),
+			10);
 	}
 
 	public void HandleInput(ConsoleKeyInfo input)
@@ -51,12 +72,14 @@ public partial class FrontEnd
 				this._display.ToggleLeftColumn();
 				this._activeColumns =
 					this._display.CalculateActiveColumns();
+				this.AddToHistory();
 				break;
 			case ConsoleKey.D2:
 				this._cursor.Reset(resetColumn: true);
 				this._display.ToggleRightColumn();
 				this._activeColumns =
 					this._display.CalculateActiveColumns();
+				this.AddToHistory();
 				break;
 			case ConsoleKey.C
 			when input.Modifiers != ConsoleModifiers.Shift:
@@ -70,6 +93,8 @@ public partial class FrontEnd
 					this._story.Threads[this._cursor.Index]);
 				this._activeColumns =
 					this._display.CalculateActiveColumns();
+
+				this.AddToHistory();
 				this._cursor.Reset();
 				break;
 			case ConsoleKey.C
@@ -82,6 +107,8 @@ public partial class FrontEnd
 				this._display.SetCurrentStoryThread(null);
 				this._activeColumns =
 					this._display.CalculateActiveColumns();
+
+				this.AddToHistory();
 				this._cursor.Reset();
 				break;
 			case ConsoleKey.N:
@@ -101,6 +128,8 @@ public partial class FrontEnd
 					this._story.Threads[nextIndex]);
 				this._activeColumns =
 					this._display.CalculateActiveColumns();
+
+				this.AddToHistory();
 				this._cursor.Reset();
 				break;
 
@@ -176,6 +205,7 @@ public partial class FrontEnd
 					((StoryThread)list[index]).TextColor = color;
 				}
 
+				this.AddToHistory();
 				this._cursor.Reset();
 				break;
 			case ConsoleKey.E:
@@ -199,6 +229,8 @@ public partial class FrontEnd
 					var color = GetColorFromUser();
 					((StoryThread)element).TextColor = color;
 				}
+
+				this.AddToHistory();
 				break;
 			case ConsoleKey.D:
 				if (this._selectingNewElement) { return; }
@@ -234,6 +266,7 @@ public partial class FrontEnd
 				if (confirmation == "y")
 				{
 					deleteElements.DeleteElement(this._cursor.Index);
+					this.AddToHistory();
 				}
 
 				this._cursor.Reset();
@@ -276,6 +309,7 @@ public partial class FrontEnd
 						this._story.Chapters[this._cursor.Index]);
 				}
 
+				this.AddToHistory();
 				this._selection = null;
 				this._cursor.Reset();
 				break;
@@ -306,6 +340,17 @@ public partial class FrontEnd
 					this._story.SaveFileLocation,
 					serializedStory);
 				GetInputFromUser($"Successful save of {this._story.SaveFileLocation}. Press ENTER to continue");
+				break;
+
+			case ConsoleKey.U:
+				var newState = input.Modifiers == ConsoleModifiers.Shift
+					? this._undoRedoStack.Redo()
+					: this._undoRedoStack.Undo();
+				this._story = newState.story;
+				this._display = newState.display;
+				this._activeColumns = newState.activeColumns;
+
+				this._cursor.Reset();
 				break;
 		}
 	}
@@ -371,6 +416,20 @@ public partial class FrontEnd
 		var color = AnsiConsole.Prompt(prompt);
 		Console.CursorVisible = false;
 		return color;
+	}
+
+	private void AddToHistory()
+	{
+		var currentThread = this._display.CurrentStoryThread;
+		var backupStory = this._story.DeepCopy(ref currentThread);
+		var backupDisplay = this._display.DeepCopy(currentThread);
+		var backupActiveColumns =
+			(ColumnType[])this._activeColumns.Clone();
+
+		this._undoRedoStack.AddToHistory(new(
+			backupStory,
+			backupDisplay,
+			backupActiveColumns));
 	}
 
 #region rendering
@@ -641,4 +700,60 @@ public partial class FrontEnd
 		return new[] { this._leftRenderer };
 	}
 #endregion
+
+	private record FrontEndState(
+		Story story,
+		Display display,
+		ColumnType[] activeColumns);
+}
+
+
+public class UndoRedoStack<T>
+{
+	private T[] _items = null!;
+	private int _current = 0;
+	private int _top = 0;
+	private int _bottom = 0;
+
+	public UndoRedoStack(T startingItem, int capacity)
+	{
+		this._items = new T[capacity];
+		this._items[0] = startingItem;
+	}
+
+	public void AddToHistory(T item)
+	{
+		this._current = this.Increment(this._current);
+		this._top = this._current;
+		if (this._current == this._bottom)
+		{
+			this._bottom = this.Increment(this._bottom);
+		}
+
+		this._items[this._current] = item;
+	}
+
+	public T Undo()
+	{
+		if (this._current != this._bottom)
+		{
+			this._current = this.Decrement(this._current);
+		}
+
+		return this._items[this._current];
+	}
+
+	public T Redo()
+	{
+		if (this._current != this._top)
+		{
+			this._current = this.Increment(this._current);
+		}
+
+		return this._items[this._current];
+	}
+
+	private int Increment(int i) => (i + 1) % this._items.Length;
+	private int Decrement(int i) =>
+		(this._items.Length + i - 1) % this._items.Length;
 }

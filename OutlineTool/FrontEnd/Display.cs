@@ -31,4 +31,13 @@ public class Display
 		.Where(ct => ct != null)
 		.Select(ct => ct!.Value)
 		.ToArray();
+
+	public Display DeepCopy(StoryThread? threadCopy)
+	{
+		var result = new Display();
+		if (this._displayLeftColumn) { result.SetCurrentStoryThread(threadCopy); }
+		if (this._displayChapters) { result.ToggleRightColumn(); }
+
+		return result;
+	}
 }

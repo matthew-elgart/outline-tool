@@ -21,7 +21,7 @@ public class Program
 		* saving/loading (while making sure to handle navigation props)
 			- factor to its own service to share options
 			- let user input name? maybe not yet
-		- user actions (while handling navigation props)
+		* user actions (while handling navigation props)
 			* threads
 				* add beat to thread
 					* refactor this like talking with michael
@@ -62,6 +62,7 @@ public class Program
 			* may not need to bother with async at all
 				* update: should definitely do this. Parallelism is causing ~a bug~ bugs
 			* can track previous console dimensions, and only render when they change (or on input)
+		* undo/redo
 		- display errors better (maybe not)
 	*/
 	private static async Task Main(string[] args)

@@ -347,9 +347,24 @@ public partial class FrontEnd
 				var newState = input.Modifiers == ConsoleModifiers.Shift
 					? this._undoRedoStack.Redo()
 					: this._undoRedoStack.Undo();
-				this._story = newState.story;
-				this._display = newState.display;
-				this._activeColumns = newState.activeColumns;
+
+				// We must create a deep copy both when adding stuff to history *and* when
+				// bringing stuff from history into the frontend:
+				// - adding to history: because if we had a shallow copy that we put in history,
+				//   then when we made more updates we'd be changing the history
+				// - updating from history: if we shallow copy from history, then when we make
+				//   updates we are again changing the history. If we undo to state 7, then redo
+				//   to state 8, then make a change to get to state 9 - if the redo brought a
+				//   shallow copy to the frontend, then the change would also modify what's in
+				//   history, and state 8 would be changed to be identical to state 9 when we
+				//   don't want it to
+				var copiedNewState = DeepCopyState(
+					newState.story,
+					newState.display,
+					newState.activeColumns);
+				this._story = copiedNewState.story;
+				this._display = copiedNewState.display;
+				this._activeColumns = copiedNewState.activeColumns;
 
 				this._cursor.Reset();
 				break;
@@ -375,6 +390,7 @@ public partial class FrontEnd
 		return result;
 	}
 
+#region user input
 	private static string GetInputFromUser(string prompt)
 	{
 		Console.SetCursorPosition(0, Console.WindowHeight - 5);
@@ -418,20 +434,35 @@ public partial class FrontEnd
 		Console.CursorVisible = false;
 		return color;
 	}
+#endregion
 
+#region undo/redo
 	private void AddToHistory()
 	{
-		var currentThread = this._display.CurrentStoryThread;
-		var backupStory = this._story.DeepCopy(ref currentThread);
-		var backupDisplay = this._display.DeepCopy(currentThread);
-		var backupActiveColumns =
-			(ColumnType[])this._activeColumns.Clone();
-
-		this._undoRedoStack.AddToHistory(new(
-			backupStory,
-			backupDisplay,
-			backupActiveColumns));
+		// Need a deep copy when adding to history because when we subsequently make changes
+		// on the frontend, we don't want those changes to update history
+		var stateCopy = DeepCopyState(this._story, this._display, this._activeColumns);
+		this._undoRedoStack.AddToHistory(stateCopy);
 	}
+
+	private static FrontEndState DeepCopyState(
+		Story story,
+		Display display,
+		ColumnType[] activeColumns)
+	{
+		var currentThread = display.CurrentStoryThread;
+		var backupStory = story.DeepCopy(ref currentThread);
+		var backupDisplay = display.DeepCopy(currentThread);
+		var backupActiveColumns = (ColumnType[])activeColumns.Clone();
+
+		return new(backupStory, backupDisplay, backupActiveColumns);
+	}
+
+	private record FrontEndState(
+		Story story,
+		Display display,
+		ColumnType[] activeColumns);
+#endregion
 
 #region rendering
 	public void Render()
@@ -701,60 +732,4 @@ public partial class FrontEnd
 		return new[] { this._leftRenderer };
 	}
 #endregion
-
-	private record FrontEndState(
-		Story story,
-		Display display,
-		ColumnType[] activeColumns);
-}
-
-
-public class UndoRedoStack<T>
-{
-	private T[] _items = null!;
-	private int _current = 0;
-	private int _top = 0;
-	private int _bottom = 0;
-
-	public UndoRedoStack(T startingItem, int capacity)
-	{
-		this._items = new T[capacity];
-		this._items[0] = startingItem;
-	}
-
-	public void AddToHistory(T item)
-	{
-		this._current = this.Increment(this._current);
-		this._top = this._current;
-		if (this._current == this._bottom)
-		{
-			this._bottom = this.Increment(this._bottom);
-		}
-
-		this._items[this._current] = item;
-	}
-
-	public T Undo()
-	{
-		if (this._current != this._bottom)
-		{
-			this._current = this.Decrement(this._current);
-		}
-
-		return this._items[this._current];
-	}
-
-	public T Redo()
-	{
-		if (this._current != this._top)
-		{
-			this._current = this.Increment(this._current);
-		}
-
-		return this._items[this._current];
-	}
-
-	private int Increment(int i) => (i + 1) % this._items.Length;
-	private int Decrement(int i) =>
-		(this._items.Length + i - 1) % this._items.Length;
 }

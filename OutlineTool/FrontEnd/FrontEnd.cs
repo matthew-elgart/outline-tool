@@ -231,6 +231,7 @@ public partial class FrontEnd
 				}
 
 				this.AddToHistory();
+				this._cursor.Reset();
 				break;
 			case ConsoleKey.D:
 				if (this._selectingNewElement) { return; }

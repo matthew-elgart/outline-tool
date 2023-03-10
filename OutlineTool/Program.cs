@@ -58,10 +58,10 @@ public class Program
 			- bug: when not rendering on a spot, nothing gets erased
 		- consider giving display access to parent (in a partial class)
 		- take a pass to rethink any keybinds
-		- consider updating render only when things are added
-			- may not need to bother with async at all
-				- update: should definitely do this. Parallelism is causing ~a bug~ bugs
-			- can track previous console dimensions, and only render when they change (or on input)
+		* consider updating render only when things are added
+			* may not need to bother with async at all
+				* update: should definitely do this. Parallelism is causing ~a bug~ bugs
+			* can track previous console dimensions, and only render when they change (or on input)
 		- display errors better (maybe not)
 	*/
 	private static async Task Main(string[] args)
@@ -101,8 +101,13 @@ public class Program
 		frontEnd.Render();
 		var exit = false;
 
+		var prevConsoleHeight = -1;
+		var prevConsoleWidth = -1;
+
 		do
 		{
+			var shouldRender = false;
+
 			if (Console.KeyAvailable)
 			{
 				var input = Console.ReadKey(intercept: true);
@@ -114,8 +119,21 @@ public class Program
 				}
 
 				frontEnd.HandleInput(input);
-				frontEnd.Render();
+				shouldRender = true;
 			}
+			else
+			{
+				var newHeight = Console.WindowHeight;
+				var newWidth = Console.WindowWidth;
+				if (newHeight != prevConsoleHeight || newWidth != prevConsoleWidth)
+				{
+					shouldRender = true;
+					prevConsoleHeight = newHeight;
+					prevConsoleWidth = newWidth;
+				}
+			}
+
+			if (shouldRender) { frontEnd.Render(); }
 
 			await Task.Delay(tickRate);
 		} while (!exit);

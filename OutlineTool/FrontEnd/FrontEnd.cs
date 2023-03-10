@@ -67,6 +67,8 @@ public partial class FrontEnd
 	{
 		switch (input.Key)
 		{
+
+#region change what's on screen
 			case ConsoleKey.D1:
 				this._cursor.Reset(resetColumn: true);
 				this._display.ToggleLeftColumn();
@@ -132,7 +134,9 @@ public partial class FrontEnd
 				this.AddToHistory();
 				this._cursor.Reset();
 				break;
+#endregion
 
+#region cursor movement
 			case ConsoleKey.DownArrow:
 			case ConsoleKey.J:
 				if (this._activeColumns.Length == 0)
@@ -165,7 +169,9 @@ public partial class FrontEnd
 				}
 				this._cursor.Left();
 				break;
+#endregion
 
+#region CRUD operations for list elements
 			case ConsoleKey.A:
 			case ConsoleKey.I:
 				if (this._selectingNewElement) { return; }
@@ -272,7 +278,9 @@ public partial class FrontEnd
 
 				this._cursor.Reset();
 				break;
+#endregion
 
+#region dragging list elements
 			case ConsoleKey.Enter:
 			case ConsoleKey.Spacebar:
 				if (!this._cursor.Visible) { return; }
@@ -314,7 +322,9 @@ public partial class FrontEnd
 				this._selection = null;
 				this._cursor.Reset();
 				break;
+#endregion
 
+#region misc user actions
 			case ConsoleKey.T:
 				this._enableColors = !this._enableColors;
 				break;
@@ -368,6 +378,8 @@ public partial class FrontEnd
 
 				this._cursor.Reset();
 				break;
+#endregion
+
 		}
 	}
 

@@ -10,7 +10,7 @@ public partial class FrontEnd
 	private const int Padding = 6;
 
 	private Story _story;
-	private Display _display = new();
+	private Display _display;
 	// could be computed on every access - but since it's a couple
 	// layers of checks, keeping this field as a "cache" and updating it
 	// when the columns change
@@ -43,10 +43,9 @@ public partial class FrontEnd
 	{
 		this._story = story;
 		this._cursor = new(this);
+		this._display = new(this);
 
 		this._display.ToggleLeftColumn();
-		this._activeColumns =
-			this._display.CalculateActiveColumns();
 		this._cursor.Reset();
 
 		var currentThread = this._display.CurrentStoryThread;
@@ -72,15 +71,13 @@ public partial class FrontEnd
 			case ConsoleKey.D1:
 				this._cursor.Reset(resetColumn: true);
 				this._display.ToggleLeftColumn();
-				this._activeColumns =
-					this._display.CalculateActiveColumns();
+
 				this.AddToHistory();
 				break;
 			case ConsoleKey.D2:
 				this._cursor.Reset(resetColumn: true);
 				this._display.ToggleRightColumn();
-				this._activeColumns =
-					this._display.CalculateActiveColumns();
+
 				this.AddToHistory();
 				break;
 			case ConsoleKey.C
@@ -93,8 +90,6 @@ public partial class FrontEnd
 
 				this._display.SetCurrentStoryThread(
 					this._story.Threads[this._cursor.Index]);
-				this._activeColumns =
-					this._display.CalculateActiveColumns();
 
 				this.AddToHistory();
 				this._cursor.Reset();
@@ -107,8 +102,6 @@ public partial class FrontEnd
 				}
 
 				this._display.SetCurrentStoryThread(null);
-				this._activeColumns =
-					this._display.CalculateActiveColumns();
 
 				this.AddToHistory();
 				this._cursor.Reset();
@@ -128,8 +121,6 @@ public partial class FrontEnd
 						this._story.Threads.Count - 1);
 				this._display.SetCurrentStoryThread(
 					this._story.Threads[nextIndex]);
-				this._activeColumns =
-					this._display.CalculateActiveColumns();
 
 				this.AddToHistory();
 				this._cursor.Reset();

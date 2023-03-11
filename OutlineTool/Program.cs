@@ -116,7 +116,7 @@ public class Program
 				if (input.Key == ConsoleKey.Escape)
 				{ 
 					exit = true;
-					return;
+					break;
 				}
 
 				frontEnd.HandleInput(input);
@@ -140,7 +140,7 @@ public class Program
 		} while (!exit);
 
 		// so terminal prompt shows up at the bottom without any scrolling
-		Console.SetCursorPosition(0, Console.WindowHeight - 3);
+		Console.SetCursorPosition(0, Console.WindowHeight - 4);
 		Console.CursorVisible = true;
 	}
 

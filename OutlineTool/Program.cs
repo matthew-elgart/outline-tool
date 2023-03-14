@@ -78,7 +78,7 @@ public class Program
 
 			var title = Console.ReadLine();
 			if (title == string.Empty) { return; }
-			//story = new() { Name = title! };
+			story = new() { Name = title! };
 			story = StoryInfoProvider.Get();
 		}
 		else
@@ -140,7 +140,7 @@ public class Program
 		} while (!exit);
 
 		// so terminal prompt shows up at the bottom without any scrolling
-		Console.SetCursorPosition(0, Console.WindowHeight - 4);
+		Console.SetCursorPosition(0, Console.WindowHeight - 3);
 		Console.CursorVisible = true;
 	}
 

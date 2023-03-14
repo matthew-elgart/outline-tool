@@ -425,7 +425,7 @@ public partial class FrontEnd
 		var prompt = new SelectionPrompt<ConsoleColor>()
 			.PageSize(4)
 			.MoreChoicesText(string.Empty)
-			.HighlightStyle(Style.Plain)
+			.HighlightStyle(null)
 			.AddChoices(Enum.GetValues<ConsoleColor>())
 			.UseConverter(c =>
 			{

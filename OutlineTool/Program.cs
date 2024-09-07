@@ -79,7 +79,6 @@ public class Program
 			var title = Console.ReadLine();
 			if (title == string.Empty) { return; }
 			story = new() { Name = title! };
-			story = StoryInfoProvider.Get();
 		}
 		else
 		{
